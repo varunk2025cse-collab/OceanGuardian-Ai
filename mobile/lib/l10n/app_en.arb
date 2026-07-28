@@ -1,0 +1,149 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "OceanGuardian",
+  "homeGreeting": "Vanakkam, {name}",
+  "@homeGreeting": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "tagline": "The Digital Lifeline for Every Fisherman",
+
+  "loginTitle": "Welcome back",
+  "registerTitle": "Create your account",
+  "phoneNumber": "Phone number",
+  "password": "Password",
+  "fullName": "Full name",
+  "boatName": "Boat name (optional)",
+  "homeHarbor": "Home harbour (optional)",
+  "emergencyContactName": "Emergency contact name",
+  "emergencyContactPhone": "Emergency contact phone",
+  "iAmAFisherman": "I am a fisherman",
+  "iAmFamily": "I am tracking a fisherman (family)",
+  "login": "Log in",
+  "register": "Create account",
+  "noAccountYet": "New here? Create an account",
+  "haveAccount": "Already have an account? Log in",
+
+  "navHome": "Home",
+  "navSos": "SOS",
+  "navWeather": "Weather",
+  "navMap": "My Location",
+  "navMarket": "Market",
+  "navSchemes": "Schemes",
+  "navFamily": "Family",
+
+  "sosButton": "SOS",
+  "sosHoldToSend": "Press to send emergency alert",
+  "sosConfirmTitle": "Send SOS alert?",
+  "sosConfirmBody": "This will send your exact location to your emergency contact and the rescue team.",
+  "sosConfirmSend": "Yes, send SOS",
+  "sosCancel": "Cancel",
+  "sosSentTitle": "SOS sent",
+  "sosSentOnline": "Your location was sent successfully. Help is on the way.",
+  "sosSentOffline": "No signal right now. Your alert is saved and will send automatically the moment signal returns.",
+  "sosHistory": "Past alerts",
+
+  "weatherTitle": "Weather & Sea Safety",
+  "weatherNoAlerts": "No active hazard alerts for your area right now.",
+  "weatherOffline": "Showing last saved alerts (offline)",
+  "severityAdvisory": "Advisory",
+  "severityWarning": "Warning",
+  "severityDanger": "Danger",
+
+  "marketTitle": "Market Prices",
+  "marketOffline": "Showing last saved prices (offline)",
+  "marketPerKg": "per kg",
+
+  "schemesTitle": "Government Schemes",
+  "schemesOffline": "Showing last saved schemes (offline)",
+  "schemesEligibility": "Who can apply",
+  "schemesHowToApply": "How to apply",
+
+  "familyTitle": "Family Tracking",
+  "familyOffline": "Showing last saved status (offline)",
+  "familyAddFisherman": "Add a fisherman to track",
+  "familyRelationLabel": "Relation (e.g. Wife, Son)",
+  "familyLastSeen": "Last seen",
+  "familyNeverSeen": "No location received yet",
+  "familyActiveSos": "ACTIVE SOS ALERT",
+  "familyAllSafe": "All clear",
+
+  "locationTitle": "My Location",
+  "locationPendingSync": "{count, plural, =0{All points synced} =1{1 point waiting to sync} other{{count} points waiting to sync}}",
+  "@locationPendingSync": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "tripStartTitle": "Start a fishing trip",
+  "tripDestination": "Destination / fishing grounds (optional)",
+  "tripEta": "Expected return time (optional)",
+  "tripStartCta": "Start trip",
+  "tripNoActive": "No active trip",
+  "tripActive": "Trip active",
+  "tripReturning": "Heading back",
+  "tripEmergency": "Trip emergency",
+  "tripMarkReturning": "Mark as returning",
+  "tripEndCta": "End trip",
+  "tripEndConfirmTitle": "End this trip?",
+  "tripEndConfirmBody": "This marks the trip as completed. GPS tracking keeps running for your next trip.",
+  "tripStartedSince": "Started {time}",
+  "@tripStartedSince": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+
+  "freshnessLive": "LIVE",
+  "freshnessRecent": "RECENT",
+  "freshnessLastKnown": "LAST KNOWN",
+  "freshnessStale": "STALE",
+  "freshnessUnknown": "UNKNOWN",
+
+  "syncOnline": "Online",
+  "syncOffline": "Offline",
+  "syncSyncing": "Syncing…",
+  "syncError": "Sync error — will retry",
+
+  "safetySafe": "SAFE",
+  "safetyMonitor": "MONITOR",
+  "safetyCaution": "CAUTION",
+  "safetyHighRisk": "HIGH RISK",
+  "safetyCritical": "CRITICAL",
+  "safetyUnknown": "UNKNOWN",
+
+  "sosEmergencyTypeTitle": "What kind of emergency?",
+  "sosTypeManual": "General SOS",
+  "sosTypeManOverboard": "Man overboard",
+  "sosTypeMedical": "Medical emergency",
+  "sosTypeFire": "Fire",
+  "sosTypeCapsize": "Capsize",
+  "sosTypeCollision": "Collision",
+  "sosTypeEngineFailure": "Engine failure",
+  "sosTypeSevereWeather": "Severe weather",
+  "sosTypeFuelShortage": "Fuel shortage",
+  "sosTypeCommsFailure": "Communication failure",
+  "sosTypeUnknown": "Not sure / other",
+
+  "navNearestHarbor": "Nearest Safe Harbor",
+  "navDistanceAway": "{distance} km away",
+  "@navDistanceAway": {
+    "placeholders": { "distance": { "type": "String" } }
+  },
+  "navEta": "About {minutes} min at cruising speed",
+  "@navEta": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "navDirectionLabel": "Head {direction}",
+  "@navDirectionLabel": {
+    "placeholders": { "direction": { "type": "String" } }
+  },
+
+  "validatorInvalidPhone": "Enter a valid phone number",
+  "validatorMinPassword": "Minimum 6 characters",
+  "validatorRequired": "Required",
+  "networkErrorGeneric": "Could not reach the server. Check your connection and try again.",
+
+  "logout": "Log out",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "save": "Save",
+  "loading": "Loading..."
+}

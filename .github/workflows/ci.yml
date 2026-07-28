@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (pytest + migration check)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: oceanguardian_ci
+          POSTGRES_USER: oceanguardian
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oceanguardian"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Real migration validation against Postgres — the project's own dev
+      # shim (Base.metadata.create_all) papers over migration bugs on
+      # SQLite, so this is the only place the Alembic chain gets checked
+      # against the database it's actually meant for.
+      - name: Verify Alembic migrations apply cleanly (Postgres)
+        env:
+          DATABASE_URL: postgresql+psycopg2://oceanguardian:ci-only-password@localhost:5432/oceanguardian_ci
+          JWT_SECRET_KEY: ci-only-jwt-secret-not-for-production-use
+        run: alembic upgrade head
+
+      - name: Run backend test suite
+        env:
+          DATABASE_URL: sqlite:///./test_all.db
+          JWT_SECRET_KEY: ci-only-jwt-secret-not-for-production-use
+          ENVIRONMENT: test
+        run: pytest -q
+
+  mobile:
+    name: Mobile (flutter analyze + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # l10n.yaml is present, so `flutter gen-l10n` must run before analyze
+      # — this is the exact build step that was broken/missing at the start
+      # of the V2 core build (see docs/V1_AUDIT.md); CI now guarantees it
+      # never silently regresses.
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      # --no-fatal-infos: the repo has ~23 pre-existing info-level lints
+      # (deprecated API usage, missing `const`) that are real but not
+      # regressions worth blocking CI over; errors and warnings still fail
+      # the build (--fatal-warnings, the default for errors).
+      - name: flutter analyze
+        run: flutter analyze --no-fatal-infos --fatal-warnings
+
+      - name: flutter test
+        run: flutter test
+
+  dashboard:
+    name: Dashboard (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rescue-dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: rescue-dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      # No test framework exists yet for the dashboard (docs/V1_AUDIT.md) —
+      # documented honestly rather than faked. `npm run build` is still a
+      # real smoke test: it fails on type errors, broken imports, etc.
+      - name: Build
+        run: npm run build
+
+  secret-scan:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

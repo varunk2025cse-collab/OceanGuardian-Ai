@@ -1,0 +1,149 @@
+{
+  "@@locale": "ta",
+
+  "appTitle": "ஓசன்கார்டியன்",
+  "homeGreeting": "வணக்கம், {name}",
+  "@homeGreeting": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "tagline": "ஒவ்வொரு மீனவருக்கும் ஒரு டிஜிட்டல் உயிர்க்கொடி",
+
+  "loginTitle": "மீண்டும் வரவேற்கிறோம்",
+  "registerTitle": "உங்கள் கணக்கை உருவாக்கவும்",
+  "phoneNumber": "தொலைபேசி எண்",
+  "password": "கடவுச்சொல்",
+  "fullName": "முழு பெயர்",
+  "boatName": "படகின் பெயர் (விரும்பினால்)",
+  "homeHarbor": "சொந்த துறைமுகம் (விரும்பினால்)",
+  "emergencyContactName": "அவசர தொடர்பு பெயர்",
+  "emergencyContactPhone": "அவசர தொடர்பு எண்",
+  "iAmAFisherman": "நான் ஒரு மீனவர்",
+  "iAmFamily": "நான் ஒரு மீனவரை கண்காணிக்கிறேன் (குடும்பம்)",
+  "login": "உள்நுழைய",
+  "register": "கணக்கு உருவாக்கு",
+  "noAccountYet": "புதியவரா? கணக்கு உருவாக்கவும்",
+  "haveAccount": "ஏற்கனவே கணக்கு உள்ளதா? உள்நுழைய",
+
+  "navHome": "முகப்பு",
+  "navSos": "SOS",
+  "navWeather": "வானிலை",
+  "navMap": "என் இடம்",
+  "navMarket": "சந்தை",
+  "navSchemes": "திட்டங்கள்",
+  "navFamily": "குடும்பம்",
+
+  "sosButton": "SOS",
+  "sosHoldToSend": "அவசர எச்சரிக்கை அனுப்ப அழுத்தவும்",
+  "sosConfirmTitle": "SOS அனுப்பவா?",
+  "sosConfirmBody": "இது உங்கள் சரியான இருப்பிடத்தை உங்கள் அவசர தொடர்புக்கும் மீட்புக் குழுவுக்கும் அனுப்பும்.",
+  "sosConfirmSend": "ஆம், SOS அனுப்பு",
+  "sosCancel": "ரத்து செய்",
+  "sosSentTitle": "SOS அனுப்பப்பட்டது",
+  "sosSentOnline": "உங்கள் இருப்பிடம் வெற்றிகரமாக அனுப்பப்பட்டது. உதவி வந்து கொண்டிருக்கிறது.",
+  "sosSentOffline": "இப்போது நெட்வொர்க் இல்லை. உங்கள் எச்சரிக்கை சேமிக்கப்பட்டது, சிக்னல் கிடைத்தவுடன் தானாக அனுப்பப்படும்.",
+  "sosHistory": "முந்தைய எச்சரிக்கைகள்",
+
+  "weatherTitle": "வானிலை மற்றும் கடல் பாதுகாப்பு",
+  "weatherNoAlerts": "உங்கள் பகுதிக்கு தற்போது அபாய எச்சரிக்கைகள் இல்லை.",
+  "weatherOffline": "கடைசியாக சேமிக்கப்பட்ட எச்சரிக்கைகள் (ஆஃப்லைன்)",
+  "severityAdvisory": "ஆலோசனை",
+  "severityWarning": "எச்சரிக்கை",
+  "severityDanger": "ஆபத்து",
+
+  "marketTitle": "சந்தை விலைகள்",
+  "marketOffline": "கடைசியாக சேமிக்கப்பட்ட விலைகள் (ஆஃப்லைன்)",
+  "marketPerKg": "ஒரு கிலோவுக்கு",
+
+  "schemesTitle": "அரசு திட்டங்கள்",
+  "schemesOffline": "கடைசியாக சேமிக்கப்பட்ட திட்டங்கள் (ஆஃப்லைன்)",
+  "schemesEligibility": "யார் விண்ணப்பிக்கலாம்",
+  "schemesHowToApply": "எப்படி விண்ணப்பிப்பது",
+
+  "familyTitle": "குடும்ப கண்காணிப்பு",
+  "familyOffline": "கடைசியாக சேமிக்கப்பட்ட நிலை (ஆஃப்லைன்)",
+  "familyAddFisherman": "கண்காணிக்க ஒரு மீனவரைச் சேர்க்கவும்",
+  "familyRelationLabel": "உறவுமுறை (எ.கா. மனைவி, மகன்)",
+  "familyLastSeen": "கடைசியாக பார்க்கப்பட்டது",
+  "familyNeverSeen": "இன்னும் இருப்பிடம் கிடைக்கவில்லை",
+  "familyActiveSos": "செயலில் உள்ள SOS எச்சரிக்கை",
+  "familyAllSafe": "அனைத்தும் பாதுகாப்பானது",
+
+  "locationTitle": "என் இடம்",
+  "locationPendingSync": "{count, plural, =0{அனைத்தும் ஒத்திசைக்கப்பட்டது} =1{1 புள்ளி காத்திருக்கிறது} other{{count} புள்ளிகள் காத்திருக்கின்றன}}",
+  "@locationPendingSync": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "tripStartTitle": "மீன்பிடி பயணத்தைத் தொடங்கு",
+  "tripDestination": "செல்லுமிடம் / மீன்பிடி பகுதி (விரும்பினால்)",
+  "tripEta": "திரும்பும் நேரம் (விரும்பினால்)",
+  "tripStartCta": "பயணத்தைத் தொடங்கு",
+  "tripNoActive": "செயலில் பயணம் இல்லை",
+  "tripActive": "பயணம் நடைபெறுகிறது",
+  "tripReturning": "திரும்பி வருகிறார்",
+  "tripEmergency": "பயண அவசரநிலை",
+  "tripMarkReturning": "திரும்புவதாகக் குறிக்கவும்",
+  "tripEndCta": "பயணத்தை முடி",
+  "tripEndConfirmTitle": "இந்த பயணத்தை முடிக்கவா?",
+  "tripEndConfirmBody": "இது பயணத்தை முடிந்ததாகக் குறிக்கும். அடுத்த பயணத்திற்கு GPS கண்காணிப்பு தொடரும்.",
+  "tripStartedSince": "{time} தொடங்கியது",
+  "@tripStartedSince": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+
+  "freshnessLive": "நேரலை",
+  "freshnessRecent": "சமீபத்தியது",
+  "freshnessLastKnown": "கடைசி அறியப்பட்ட இடம்",
+  "freshnessStale": "பழையது",
+  "freshnessUnknown": "தெரியவில்லை",
+
+  "syncOnline": "ஆன்லைன்",
+  "syncOffline": "ஆஃப்லைன்",
+  "syncSyncing": "ஒத்திசைக்கிறது…",
+  "syncError": "ஒத்திசைவு பிழை — மீண்டும் முயற்சிக்கும்",
+
+  "safetySafe": "பாதுகாப்பானது",
+  "safetyMonitor": "கண்காணிப்பு",
+  "safetyCaution": "எச்சரிக்கை",
+  "safetyHighRisk": "அதிக ஆபத்து",
+  "safetyCritical": "மிக ஆபத்தானது",
+  "safetyUnknown": "தெரியவில்லை",
+
+  "sosEmergencyTypeTitle": "என்ன வகையான அவசரநிலை?",
+  "sosTypeManual": "பொது SOS",
+  "sosTypeManOverboard": "கடலில் விழுந்தார்",
+  "sosTypeMedical": "மருத்துவ அவசரநிலை",
+  "sosTypeFire": "தீ விபத்து",
+  "sosTypeCapsize": "படகு கவிழ்ந்தது",
+  "sosTypeCollision": "மோதல்",
+  "sosTypeEngineFailure": "இயந்திர கோளாறு",
+  "sosTypeSevereWeather": "கடுமையான வானிலை",
+  "sosTypeFuelShortage": "எரிபொருள் பற்றாக்குறை",
+  "sosTypeCommsFailure": "தொடர்பு கோளாறு",
+  "sosTypeUnknown": "தெரியவில்லை / மற்றவை",
+
+  "navNearestHarbor": "அருகிலுள்ள பாதுகாப்பான துறைமுகம்",
+  "navDistanceAway": "{distance} கி.மீ தொலைவில்",
+  "@navDistanceAway": {
+    "placeholders": { "distance": { "type": "String" } }
+  },
+  "navEta": "வழக்கமான வேகத்தில் சுமார் {minutes} நிமிடங்கள்",
+  "@navEta": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "navDirectionLabel": "{direction} திசையில் செல்லவும்",
+  "@navDirectionLabel": {
+    "placeholders": { "direction": { "type": "String" } }
+  },
+
+  "validatorInvalidPhone": "சரியான தொலைபேசி எண்ணை உள்ளிடவும்",
+  "validatorMinPassword": "குறைந்தது 6 எழுத்துகள்",
+  "validatorRequired": "இது அவசியம்",
+  "networkErrorGeneric": "சேவையகத்தை அடைய முடியவில்லை. உங்கள் இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
+
+  "logout": "வெளியேறு",
+  "retry": "மீண்டும் முயற்சி",
+  "cancel": "ரத்து செய்",
+  "save": "சேமி",
+  "loading": "ஏற்றுகிறது..."
+}

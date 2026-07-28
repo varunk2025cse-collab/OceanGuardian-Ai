@@ -1,0 +1,35 @@
+# Root-level .gitignore — this project doesn't currently have its own git
+# repo initialized, but this is here so secrets/build output never get
+# committed if/when one is (see docs/SECURITY.md).
+
+.env
+.env.local
+
+# Backend
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.venv/
+backend/venv/
+backend/*.db
+backend/*.sqlite3
+backend/.pytest_cache/
+backend/test_output.txt
+
+# Mobile (Flutter)
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/build/
+mobile/android/
+mobile/ios/
+mobile/web/
+mobile/lib/l10n/app_localizations*.dart
+
+# Dashboard (React)
+rescue-dashboard/node_modules/
+rescue-dashboard/dist/
+
+# OS
+.DS_Store
+Thumbs.db
