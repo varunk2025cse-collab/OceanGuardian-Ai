@@ -31,7 +31,7 @@ from app.logging_config import logger
 # This ensures create_all() below and Alembic autogenerate both see the full schema.
 from app.models import user, family_link, location, sos        # noqa: F401
 from app.models import weather_alert, market_price, govt_scheme  # noqa: F401
-from app.models import boat, trip                                    # noqa: F401 Phase 2
+from app.models import boat, trip                                    # noqa: F401 Phase 2, 009
 from app.models import phase5                                    # noqa: F401 Phase 5
 
 # ── Create tables (dev ergonomics) ────────────────────────────────────────────

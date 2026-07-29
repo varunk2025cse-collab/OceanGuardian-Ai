@@ -428,6 +428,8 @@ class BoatFuelLog(Base):
     distance_traveled_km = Column(Float)
     efficiency_km_per_liter = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    # Migration 009 addition
+    logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships
     boat = relationship("Boat", foreign_keys=[boat_id])
@@ -449,6 +451,10 @@ class BoatMaintenance(Base):
     parts_replaced = Column(Text)  # JSON
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # Migration 009 additions
+    status = Column(String(20), nullable=False, server_default="scheduled")
+    completed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     boat = relationship("Boat", foreign_keys=[boat_id])

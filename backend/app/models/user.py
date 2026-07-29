@@ -49,7 +49,8 @@ class User(Base):
                              foreign_keys="LocationPing.user_id")
     sos_alerts = relationship("SOSAlert", back_populates="user", cascade="all, delete-orphan",
                                foreign_keys="SOSAlert.user_id")
-    boats = relationship("Boat", back_populates="owner", cascade="all, delete-orphan")
+    boats = relationship("Boat", back_populates="owner", cascade="all, delete-orphan",
+                          foreign_keys="[Boat.owner_id]")
     trips = relationship("Trip", back_populates="user", cascade="all, delete-orphan",
                           foreign_keys="Trip.user_id")
 

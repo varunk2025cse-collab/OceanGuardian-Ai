@@ -76,7 +76,7 @@ def upgrade():
             sa.Column("session_id", sa.Integer, sa.ForeignKey("copilot_sessions.id", ondelete="CASCADE"), nullable=False),
             sa.Column("user_message", sa.Text, nullable=False),
             sa.Column("ai_response", sa.Text, nullable=False),
-            sa.Column("intent", sa.String(50) if is_sqlite else None),  # Mapped from enum in logic
+            sa.Column("intent", sa.String(50)),  # Mapped from enum in logic
             sa.Column("confidence_score", sa.Float, default=0.0),  # 0.0 to 1.0
             sa.Column("audio_request_url", sa.String(500)),  # URL to user's voice input
             sa.Column("audio_response_url", sa.String(500)),  # URL to AI's voice output
@@ -95,7 +95,7 @@ def upgrade():
             "risk_predictions",
             sa.Column("id", sa.Integer, primary_key=True),
             sa.Column("trip_id", sa.Integer, sa.ForeignKey("trips.id", ondelete="CASCADE"), nullable=False),
-            sa.Column("risk_level", sa.String(20) if is_sqlite else None),  # Mapped from enum
+            sa.Column("risk_level", sa.String(20)),  # Mapped from enum
             sa.Column("risk_score", sa.Float, nullable=False),  # 0.0 to 100.0
             sa.Column("contributing_factors_json", sa.Text, default="{}"),  # Weather, location, boat, etc.
             sa.Column("model_version", sa.String(50)),  # e.g., "xgboost_v1.2"
@@ -153,7 +153,7 @@ def upgrade():
             sa.Column("time_since_last_update_minutes", sa.Integer, default=0),
             sa.Column("movement_detected", sa.Boolean, default=True),
             sa.Column("offline_duration_minutes", sa.Integer, default=0),
-            sa.Column("status", sa.String(20) if is_sqlite else None),  # Mapped from enum
+            sa.Column("status", sa.String(20)),  # Mapped from enum
             sa.Column("check_status", sa.String(50)),  # "ok", "stale", "offline", "alert"
             sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
         )

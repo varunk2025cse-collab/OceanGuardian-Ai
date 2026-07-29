@@ -11,7 +11,7 @@ class ApiConfig {
 
   static const String baseUrl = String.fromEnvironment(
     'OG_API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
+    defaultValue: 'http://172.16.147.75:8000',
   );
 
   static const String apiV1 = '$baseUrl/api/v1';

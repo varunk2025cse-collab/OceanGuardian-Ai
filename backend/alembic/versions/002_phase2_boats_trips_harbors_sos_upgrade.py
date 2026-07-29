@@ -28,6 +28,8 @@ def _table_exists(name: str) -> bool:
 
 def _column_exists(table: str, column: str) -> bool:
     bind = op.get_bind()
+    if not sa_inspect(bind).has_table(table):
+        return False
     cols = [c["name"] for c in sa_inspect(bind).get_columns(table)]
     return column in cols
 
@@ -109,14 +111,22 @@ def upgrade() -> None:
         op.add_column("sos_alerts", sa.Column("priority", sa.String(20), server_default="high"))
     if not _column_exists("sos_alerts", "rescue_notes"):
         op.add_column("sos_alerts", sa.Column("rescue_notes", sa.Text))
-    if not _column_exists("sos_alerts", "acknowledged_by"):
-        op.add_column("sos_alerts", sa.Column("acknowledged_by", sa.Integer, sa.ForeignKey("users.id")))
-    if not _column_exists("sos_alerts", "resolved_by"):
-        op.add_column("sos_alerts", sa.Column("resolved_by", sa.Integer, sa.ForeignKey("users.id")))
+
+    # Columns with FK constraints need batch_alter_table on SQLite
+    # (SQLite doesn't support ALTER TABLE ADD CONSTRAINT)
+    with op.batch_alter_table("sos_alerts") as batch_op:
+        if not _column_exists("sos_alerts", "acknowledged_by"):
+            batch_op.add_column(sa.Column("acknowledged_by", sa.Integer))
+            batch_op.create_foreign_key("fk_sos_alerts_acknowledged_by", "users", ["acknowledged_by"], ["id"])
+        if not _column_exists("sos_alerts", "resolved_by"):
+            batch_op.add_column(sa.Column("resolved_by", sa.Integer))
+            batch_op.create_foreign_key("fk_sos_alerts_resolved_by", "users", ["resolved_by"], ["id"])
 
     # ── 6. Add trip_id to location_pings ──────────────────────────────────────
-    if not _column_exists("location_pings", "trip_id"):
-        op.add_column("location_pings", sa.Column("trip_id", sa.Integer, sa.ForeignKey("trips.id")))
+    with op.batch_alter_table("location_pings") as batch_op:
+        if not _column_exists("location_pings", "trip_id"):
+            batch_op.add_column(sa.Column("trip_id", sa.Integer))
+            batch_op.create_foreign_key("fk_location_pings_trip_id", "trips", ["trip_id"], ["id"])
 
 
 def downgrade() -> None:
