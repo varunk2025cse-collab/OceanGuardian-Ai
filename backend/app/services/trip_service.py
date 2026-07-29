@@ -17,6 +17,7 @@ status itself.
 existing rows and other services that filter on "active"/"completed"/
 "cancelled"/"emergency" strings keep working unchanged.
 """
+import logging
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status as http_status
@@ -24,6 +25,8 @@ from sqlalchemy.orm import Session
 
 from app.models.boat import Boat
 from app.models.trip import Trip
+
+logger = logging.getLogger("app.services.trip_service")
 
 
 class TripStatus:
@@ -101,6 +104,32 @@ class TripService:
                 raise HTTPException(
                     status_code=http_status.HTTP_409_CONFLICT,
                     detail="Boat is already in use by another active trip",
+                )
+
+            # ── Trip Readiness Advisory (non-blocking) ────────────────────────
+            # The Readiness Service evaluates boat status, crew, documents,
+            # equipment, and maintenance. A structured safety evaluation is
+            # available at GET /boats/{id}/readiness for operators to inspect.
+            #
+            # This advisory does NOT block trip start — fail-open is the safer
+            # default for a humanitarian safety platform. Blocking a legitimate
+            # trip due to a data-entry gap (e.g. missing crew record) could
+            # delay a fishing departure and harm the very people we protect.
+            #
+            # Emergency SOS is never blocked by any check.
+            try:
+                from app.services.boat_readiness_service import BoatReadinessService
+                readiness = BoatReadinessService.evaluate_boat_readiness(db, boat_id)
+                if not readiness.trip_allowed:
+                    logger.warning(
+                        "Trip started on non-ready boat | boat_id=%s | "
+                        "readiness_score=%s | blocking_issues=%s",
+                        boat_id, readiness.safety_score, readiness.blocking_issues,
+                    )
+            except Exception:
+                logger.exception(
+                    "BoatReadinessService advisory failed — allowing trip start | "
+                    "boat_id=%s", boat_id,
                 )
 
         trip = Trip(

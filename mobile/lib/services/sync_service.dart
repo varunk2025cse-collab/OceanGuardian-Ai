@@ -6,6 +6,7 @@ import '../models/location_point.dart';
 import 'api_client.dart';
 import 'auth_service.dart';
 import 'local_db_service.dart';
+import 'boat_repository.dart';
 
 /// The four states Part 2 of the core build requires the UI to be able to
 /// show, never silently hidden behind a spinner: ONLINE (connectivity
@@ -82,6 +83,7 @@ class SyncService {
     try {
       await _syncPendingSos();
       await _syncPendingLocations();
+      await _syncBoatQueue();
       await _refreshReferenceCaches();
     } catch (_) {
       // A failure here means "server unreachable despite having signal" —
@@ -163,6 +165,15 @@ class SyncService {
         final status = await ApiClient.instance.get('/family/status');
         await LocalDbService.instance.putCache('family_status', status);
       } catch (_) {}
+    }
+  }
+
+  /// Drain the boat management sync queue.
+  Future<void> _syncBoatQueue() async {
+    try {
+      await BoatRepository.instance.processSyncQueue();
+    } catch (_) {
+      // Non-critical — boat writes will retry on next sync cycle.
     }
   }
 }

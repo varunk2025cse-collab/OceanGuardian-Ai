@@ -78,6 +78,27 @@ class ApiClient {
         return _decode(response);
       });
 
+  Future<dynamic> postV2(String path, Map<String, dynamic> body) => _withRetry(() async {
+        final response = await http
+            .post(_uriV2(path), headers: _headers(), body: jsonEncode(body))
+            .timeout(const Duration(seconds: 15));
+        return _decode(response);
+      });
+
+  Future<dynamic> patchV2(String path, Map<String, dynamic> body) => _withRetry(() async {
+        final response = await http
+            .patch(_uriV2(path), headers: _headers(), body: jsonEncode(body))
+            .timeout(const Duration(seconds: 15));
+        return _decode(response);
+      });
+
+  Future<dynamic> deleteV2(String path) => _withRetry(() async {
+        final response = await http
+            .delete(_uriV2(path), headers: _headers())
+            .timeout(const Duration(seconds: 15));
+        return _decode(response);
+      });
+
   Future<dynamic> patch(String path, Map<String, dynamic> body) => _withRetry(() async {
         final response = await http
             .patch(_uri(path), headers: _headers(), body: jsonEncode(body))

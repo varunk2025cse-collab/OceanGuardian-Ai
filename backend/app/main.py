@@ -58,6 +58,7 @@ from app.routers.v2 import risk_prediction as risk_prediction_v2           # noq
 from app.routers.v2 import escalation as escalation_v2                     # noqa: E402
 from app.routers.v2 import tracking as tracking_v2                         # noqa: E402
 from app.routers.v2 import safety as safety_v2                             # noqa: E402
+from app.routers.v2 import boats as boats_v2                               # noqa: E402
 from app.routers.v2 import weather as weather_v2                           # noqa: E402
 from app.routers.v2 import incidents as incidents_v2                       # noqa: E402
 from app.routers.v2 import ai as ai_v2                                     # noqa: E402
@@ -111,6 +112,7 @@ app.include_router(safety_v2.router)
 app.include_router(weather_v2.router)
 app.include_router(incidents_v2.router)
 app.include_router(ai_v2.router)
+app.include_router(boats_v2.router)
 
 
 @app.get("/", tags=["health"])
