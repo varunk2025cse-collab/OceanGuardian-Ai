@@ -11,12 +11,71 @@ Phase 2 introduced the core Boat entity.  Migration 009 adds:
 safety_equipment (TEXT) is kept for backward compatibility; new code
 should use boat_equipment_items instead.
 """
+import enum
+
 from sqlalchemy import Column, Integer, Float, String, Boolean, Text, DateTime, Date, ForeignKey, func
 from sqlalchemy.orm import relationship
 
 from app.database import Base
 
 
+# =============================================================================
+# Strongly-typed enums (migration 009)
+# =============================================================================
+# These enums use the (str, enum.Enum) pattern so that enum members ARE
+# strings — they interoperate seamlessly with the String(30) columns that
+# migration 009 created, while giving Python code compile-time type safety,
+# validation, and self-documentation.  The column types stay String(30) to
+# remain byte-for-byte compatible with the migration on both SQLite and PG.
+
+
+class BoatStatus(str, enum.Enum):
+    """Lifecycle states for a boat (migration 009 — 7-state FSM).
+
+    Transitions are enforced by BoatService.change_status(), not by the
+    database.  The FSM legal-transition table lives in boat_service.py so
+    it can be unit-tested independently of the model layer.
+    """
+
+    REGISTERED = "registered"       # first registration, not yet active
+    ACTIVE = "active"               # in service, can go on trips
+    INACTIVE = "inactive"           # temporarily out of service (owner request)
+    MAINTENANCE = "maintenance"     # undergoing repair / servicing
+    EMERGENCY = "emergency"         # SOS or critical fault reported
+    LOST = "lost"                   # declared lost at sea
+    DAMAGED = "damaged"             # structural / operational damage
+    DECOMMISSIONED = "decommissioned"  # permanently retired
+
+    @classmethod
+    def all(cls) -> set[str]:
+        return {s.value for s in cls}
+
+    @classmethod
+    def terminal(cls) -> set[str]:
+        """States from which no further transitions are allowed."""
+        return {cls.DECOMMISSIONED.value}
+
+
+class BoatVerificationStatus(str, enum.Enum):
+    """Document-verification workflow states (migration 009).
+
+    Only operators / admins can advance the verification state — see
+    BoatService.verify_boat().
+    """
+
+    UNVERIFIED = "unverified"       # never submitted for verification
+    PENDING = "pending"             # documents submitted, awaiting review
+    VERIFIED = "verified"           # documents reviewed and approved
+    REJECTED = "rejected"           # documents reviewed and rejected
+
+    @classmethod
+    def all(cls) -> set[str]:
+        return {s.value for s in cls}
+
+
+# =============================================================================
+# Boat aggregate root
+# =============================================================================
 class Boat(Base):
     __tablename__ = "boats"
 
@@ -87,6 +146,39 @@ class Boat(Base):
     ownership_transfers = relationship("BoatOwnershipTransfer", back_populates="boat",
                                        foreign_keys="BoatOwnershipTransfer.boat_id",
                                        cascade="all, delete-orphan")
+
+    # ── Computed properties ───────────────────────────────────────────────────
+
+    @property
+    def is_trip_ready(self) -> bool:
+        """Lightweight readiness indicator for trip dispatch.
+
+        This property performs **no database queries** — it inspects only
+        attributes already loaded on the instance.  It is intentionally
+        shallow so it can be called in hot paths (e.g. trip-start
+        validation, fleet listing) without triggering N+1 queries.
+
+        The **full** Trip Readiness Service (Task 1.4) performs deeper
+        checks — expired mandatory documents, overdue critical maintenance,
+        crew certification, equipment inventory — via explicit service-layer
+        queries.  This property does NOT duplicate that logic; it is a
+        fast pre-filter that answers "is this boat obviously not ready?"
+        based on its own lifecycle state.
+
+        Returns True when the boat is:
+          - Not soft-deleted
+          - Active (is_active flag)
+          - In a status that permits trip dispatch (registered or active)
+        """
+        if self.deleted_at is not None:
+            return False
+        if not self.is_active:
+            return False
+        if self.status not in (BoatStatus.ACTIVE.value, BoatStatus.REGISTERED.value):
+            return False
+        return True
+
+    # ── Backwards-compat constructor ─────────────────────────────────────────
 
     def __init__(self, *args, **kwargs):
         if "boat_name" in kwargs and "name" not in kwargs:
