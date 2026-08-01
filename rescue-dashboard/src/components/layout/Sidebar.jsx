@@ -2,16 +2,27 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV = [
-  { to: '/',          label: 'Dashboard',    icon: '📊' },
-  { to: '/sos',       label: 'SOS Alerts',   icon: '🆘' },
-  { to: '/map',       label: 'Live Map',     icon: '🗺️' },
-  { to: '/fleet',     label: 'Fleet Ops',    icon: '🚤' },
-  { to: '/trips',     label: 'Trip Ops',     icon: '⛵' },
-  { to: '/harbors',   label: 'Harbor Ops',   icon: '⚓' },
-  { to: '/weather',   label: 'Weather Center',icon:'🌦️' },
-  { to: '/fishermen', label: 'Fishermen',    icon: '🎣' },
-  { to: '/incidents', label: 'Incidents',    icon: '🚨' },
-  { to: '/analytics', label: 'Analytics',    icon: '📈' },
+  // Core operations
+  { to: '/',             label: 'Dashboard',         icon: '📊' },
+  { to: '/sos',          label: 'SOS Alerts',        icon: '🆘' },
+  { to: '/map',          label: 'Live Map',          icon: '🗺️' },
+  // Fleet management
+  { to: '/fleet',        label: 'Fleet Ops',         icon: '🚤' },
+  { to: '/trips',        label: 'Trip Ops',          icon: '⛵' },
+  { to: '/crew',         label: 'Crew Management',   icon: '👥' },
+  { to: '/equipment',    label: 'Equipment Center',  icon: '🛟' },
+  { to: '/inspections',  label: 'Inspections',       icon: '📋' },
+  { to: '/documents',    label: 'Documents',         icon: '📄' },
+  // Infrastructure
+  { to: '/harbors',      label: 'Harbor Ops',        icon: '⚓' },
+  { to: '/weather',      label: 'Weather Center',    icon: '🌦️' },
+  // People
+  { to: '/fishermen',    label: 'Fishermen',         icon: '🎣' },
+  // Intelligence
+  { to: '/incidents',    label: 'Incidents',         icon: '🚨' },
+  { to: '/analytics',    label: 'Analytics',         icon: '📈' },
+  { to: '/notifications',label: 'Notifications',     icon: '🔔' },
+  { to: '/admin',        label: 'Administration',    icon: '⚙️' },
 ]
 
 export function Sidebar({ activeSosCount }) {

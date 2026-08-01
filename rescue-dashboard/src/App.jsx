@@ -13,6 +13,12 @@ import { WeatherCenterPage } from './pages/WeatherCenterPage'
 import { FishermenPagePremium } from './pages/FishermenPagePremium'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { IncidentsPage } from './pages/IncidentsPage'
+import { CrewManagementPage } from './pages/CrewManagementPage'
+import { EquipmentCenterPage } from './pages/EquipmentCenterPage'
+import { InspectionCenterPage } from './pages/InspectionCenterPage'
+import { DocumentCenterPage } from './pages/DocumentCenterPage'
+import { NotificationCenterPage } from './pages/NotificationCenterPage'
+import { AdministrationPage } from './pages/AdministrationPage'
 import { useState } from 'react'
 
 function ProtectedLayout() {
@@ -54,6 +60,12 @@ export default function App() {
             <Route path="/fishermen" element={<FishermenPagePremium />} />
             <Route path="/incidents" element={<IncidentsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/crew" element={<CrewManagementPage />} />
+            <Route path="/equipment" element={<EquipmentCenterPage />} />
+            <Route path="/inspections" element={<InspectionCenterPage />} />
+            <Route path="/documents" element={<DocumentCenterPage />} />
+            <Route path="/notifications" element={<NotificationCenterPage />} />
+            <Route path="/admin" element={<AdministrationPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
