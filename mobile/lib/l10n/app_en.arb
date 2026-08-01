@@ -145,5 +145,83 @@
   "retry": "Retry",
   "cancel": "Cancel",
   "save": "Save",
-  "loading": "Loading..."
+  "loading": "Loading...",
+
+  "boatListTitle": "My Boats",
+  "boatRegisterCta": "Register Boat",
+  "boatStatusActive": "Active",
+  "boatStatusMaintenance": "Maintenance",
+  "boatStatusEmergency": "Emergency",
+  "boatStatusInactive": "Inactive",
+  "boatStatusLost": "Lost",
+  "boatStatusDamaged": "Damaged",
+  "boatStatusDecommissioned": "Decommissioned",
+  "boatStatusRegistered": "Registered",
+  "boatTripReady": "Trip Ready",
+  "boatTripNotReady": "Not Ready",
+  "boatHealthScore": "Health Score",
+  "boatOfflineBanner": "Offline — showing saved data",
+  "boatNoBoats": "No boats registered yet",
+  "boatRegisterFirst": "Register your first boat",
+
+  "documentsTitle": "Documents",
+  "documentAddCta": "Add Document",
+  "documentExpiryAlerts": "Expiry Alerts",
+  "documentVerified": "Verified",
+  "documentExpired": "Expired",
+  "documentPending": "Pending",
+  "documentNoDocuments": "No documents yet",
+  "documentExpiresIn": "Expires in {days} days",
+  "@documentExpiresIn": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "crewTitle": "Crew",
+  "crewAddCta": "Add Crew",
+  "crewNoCaptain": "No captain assigned",
+  "crewNoCrew": "No crew members yet",
+  "crewRemove": "Remove",
+  "crewCaptain": "Captain",
+  "crewRoleLabel": "Role",
+  "crewPhoneLabel": "Phone number",
+  "crewNameLabel": "Full name",
+  "crewPrimaryContact": "Primary contact",
+
+  "equipmentTitle": "Equipment",
+  "equipmentAddCta": "Add Equipment",
+  "equipmentNoItems": "No equipment records yet",
+  "equipmentChecklistScore": "{ok} of {total} items OK",
+  "@equipmentChecklistScore": {
+    "placeholders": {
+      "ok": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "equipmentMarkChecked": "Mark All Checked Today",
+  "equipmentConditionGood": "Good",
+  "equipmentConditionFair": "Fair",
+  "equipmentConditionPoor": "Poor",
+  "equipmentConditionMissing": "Missing",
+
+  "maintenanceTitle": "Maintenance",
+  "maintenanceNoRecords": "No maintenance records yet",
+
+  "qrCodeTitle": "QR Code",
+  "qrCodeShare": "Share",
+  "qrCodeSave": "Save",
+  "qrCodeCopy": "Copy Token",
+  "qrCodeDescription": "Scan to identify this boat",
+  "qrCodeOffline": "QR code works offline",
+
+  "readinessTitle": "Trip Readiness",
+  "readinessNotReady": "NOT READY",
+  "readinessSafe": "READY",
+  "readinessCaution": "CAUTION",
+  "readinessBlockingIssues": "Blocking Issues",
+  "readinessWarnings": "Warnings",
+  "readinessPassedChecks": "Passed Checks",
+  "readinessStartTrip": "Start Trip Now",
+  "readinessRefresh": "Refresh Check",
+  "readinessTripAllowed": "Trip allowed",
+  "readinessTripBlocked": "Trip not allowed"
 }

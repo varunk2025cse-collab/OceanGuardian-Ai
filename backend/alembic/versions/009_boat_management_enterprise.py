@@ -19,7 +19,7 @@ Revision ID: 009_boat_management_enterprise
 Revises: 008_safety_incident_engine
 Create Date: 2025-01-03 00:00:00.000000
 """
-from alembic import op
+from alembic import op 
 import sqlalchemy as sa
 from sqlalchemy import inspect as sa_inspect
 

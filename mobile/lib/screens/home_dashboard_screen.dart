@@ -12,6 +12,7 @@ import '../services/trip_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/safety_state_badge.dart';
 import 'auth/login_screen.dart';
+import 'boat_list_screen.dart';
 import 'location_screen.dart';
 import 'sos_screen.dart';
 import 'start_trip_screen.dart';
@@ -165,6 +166,16 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                 ),
               ),
 
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.directions_boat, color: AppColors.deepSea),
+                title: const Text('My Boats', style: TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: const Text('Manage boats, documents, crew'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BoatListScreen())),
+              ),
+            ),
+            const SizedBox(height: 8),
             Card(
               child: ListTile(
                 leading: const Icon(Icons.gps_fixed, color: AppColors.deepSea),

@@ -145,5 +145,83 @@
   "retry": "மீண்டும் முயற்சி",
   "cancel": "ரத்து செய்",
   "save": "சேமி",
-  "loading": "ஏற்றுகிறது..."
+  "loading": "ஏற்றுகிறது...",
+
+  "boatListTitle": "என் படகுகள்",
+  "boatRegisterCta": "படகு பதிவு செய்",
+  "boatStatusActive": "செயலில்",
+  "boatStatusMaintenance": "பராமரிப்பு",
+  "boatStatusEmergency": "அவசரநிலை",
+  "boatStatusInactive": "செயலற்றது",
+  "boatStatusLost": "காணவில்லை",
+  "boatStatusDamaged": "சேதமடைந்தது",
+  "boatStatusDecommissioned": "ஓய்வுபெற்றது",
+  "boatStatusRegistered": "பதிவு செய்யப்பட்டது",
+  "boatTripReady": "பயணம் தயார்",
+  "boatTripNotReady": "பயணம் தயாரில்லை",
+  "boatHealthScore": "படகு ஆரோக்கியம்",
+  "boatOfflineBanner": "இணைப்பு இல்லை — சேமிக்கப்பட்ட தரவு காட்டப்படுகிறது",
+  "boatNoBoats": "இன்னும் படகுகள் பதிவு செய்யப்படவில்லை",
+  "boatRegisterFirst": "உங்கள் முதல் படகை பதிவு செய்யுங்கள்",
+
+  "documentsTitle": "ஆவணங்கள்",
+  "documentAddCta": "ஆவணம் சேர்",
+  "documentExpiryAlerts": "காலாவதி எச்சரிக்கைகள்",
+  "documentVerified": "சரிபார்க்கப்பட்டது",
+  "documentExpired": "காலாவதியானது",
+  "documentPending": "நிலுவையில்",
+  "documentNoDocuments": "இன்னும் ஆவணங்கள் இல்லை",
+  "documentExpiresIn": "{days} நாட்களில் காலாவதியாகும்",
+  "@documentExpiresIn": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "crewTitle": "குழுவினர்",
+  "crewAddCta": "குழுவினர் சேர்",
+  "crewNoCaptain": "கேப்டன் நியமிக்கப்படவில்லை",
+  "crewNoCrew": "இன்னும் குழுவினர் இல்லை",
+  "crewRemove": "நீக்கு",
+  "crewCaptain": "கேப்டன்",
+  "crewRoleLabel": "பதவி",
+  "crewPhoneLabel": "தொலைபேசி எண்",
+  "crewNameLabel": "முழு பெயர்",
+  "crewPrimaryContact": "முதன்மை தொடர்பு",
+
+  "equipmentTitle": "உபகரணங்கள்",
+  "equipmentAddCta": "உபகரணம் சேர்",
+  "equipmentNoItems": "இன்னும் உபகரண பதிவுகள் இல்லை",
+  "equipmentChecklistScore": "{total} இல் {ok} பொருட்கள் சரி",
+  "@equipmentChecklistScore": {
+    "placeholders": {
+      "ok": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "equipmentMarkChecked": "இன்று அனைத்தும் சரிபார்க்கப்பட்டது என குறிக்கவும்",
+  "equipmentConditionGood": "நல்லது",
+  "equipmentConditionFair": "சரியானது",
+  "equipmentConditionPoor": "மோசமானது",
+  "equipmentConditionMissing": "காணவில்லை",
+
+  "maintenanceTitle": "பராமரிப்பு",
+  "maintenanceNoRecords": "இன்னும் பராமரிப்பு பதிவுகள் இல்லை",
+
+  "qrCodeTitle": "QR குறியீடு",
+  "qrCodeShare": "பகிர்",
+  "qrCodeSave": "சேமி",
+  "qrCodeCopy": "டோக்கன் நகலெடு",
+  "qrCodeDescription": "இந்த படகை அடையாளம் காண ஸ்கேன் செய்யவும்",
+  "qrCodeOffline": "QR குறியீடு ஆஃப்லைனில் வேலை செய்கிறது",
+
+  "readinessTitle": "பயண தயார்நிலை",
+  "readinessNotReady": "தயாரில்லை",
+  "readinessSafe": "தயார்",
+  "readinessCaution": "எச்சரிக்கை",
+  "readinessBlockingIssues": "தடுக்கும் பிரச்சினைகள்",
+  "readinessWarnings": "எச்சரிக்கைகள்",
+  "readinessPassedChecks": "தேர்ச்சி பெற்ற சோதனைகள்",
+  "readinessStartTrip": "இப்போது பயணம் தொடங்கு",
+  "readinessRefresh": "மீண்டும் சரிபார்",
+  "readinessTripAllowed": "பயணம் அனுமதிக்கப்படுகிறது",
+  "readinessTripBlocked": "பயணம் அனுமதிக்கப்படவில்லை"
 }

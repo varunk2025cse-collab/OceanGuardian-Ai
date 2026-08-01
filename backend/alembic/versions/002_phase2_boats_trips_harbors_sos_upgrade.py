@@ -12,7 +12,7 @@ Column additions to existing tables:
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import inspect as sa_inspect
+from sqlalchemy import inspect as sa_inspect/
 
 
 revision = "002"

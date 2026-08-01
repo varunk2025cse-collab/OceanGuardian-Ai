@@ -13,15 +13,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../l10n/app_localizations.dart';
 import '../models/boat.dart';
 import '../models/boat_document.dart';
 import '../models/boat_crew.dart';
 import '../models/boat_equipment.dart';
+import '../services/api_client.dart';
 import '../services/boat_service.dart';
-import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/boat_status_badge.dart';
+import 'boat_crew_screen.dart';
+import 'boat_documents_screen.dart';
+import 'boat_equipment_screen.dart';
+import 'boat_qr_screen.dart';
+import 'trip_readiness_screen.dart';
 
 class BoatDetailScreen extends StatefulWidget {
   final int boatId;
@@ -39,8 +43,6 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
   List<BoatCrewMember> _crew = [];
   List<BoatEquipmentItem> _equipment = [];
   Map<String, dynamic>? _readiness;
-  int _activeTab = 0;
-
   @override
   void initState() {
     super.initState();
@@ -79,9 +81,6 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
     return Scaffold(
       backgroundColor: AppColors.sand,
       appBar: AppBar(
@@ -106,7 +105,7 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                     children: [
                       const Icon(Icons.directions_boat_outlined, size: 64, color: AppColors.textDisabled),
                       const SizedBox(height: 16),
-                      Text('Boat not found', style: theme.textTheme.titleLarge),
+                      Text('Boat not found', style: Theme.of(context).textTheme.titleLarge),
                     ],
                   ),
                 )
@@ -161,7 +160,7 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _readinessColor(status).withOpacity(0.15),
+                    color: _readinessColor(status).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: _readinessColor(status), width: 2),
                   ),
@@ -183,16 +182,16 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                 ),
                 const Spacer(),
                 if (allowed)
-                  const Chip(
-                    avatar: Icon(Icons.check_circle, size: 16, color: AppColors.safeGreen),
-                    label: Text('Trip Allowed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                    backgroundColor: AppColors.safeGreen.withOpacity(0.1),
+                  Chip(
+                    avatar: const Icon(Icons.check_circle, size: 16, color: AppColors.safeGreen),
+                    label: const Text('Trip Allowed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    backgroundColor: AppColors.safeGreen.withValues(alpha: 0.1),
                   )
                 else
-                  const Chip(
-                    avatar: Icon(Icons.cancel, size: 16, color: AppColors.coral),
-                    label: Text('Not Allowed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                    backgroundColor: AppColors.coral.withOpacity(0.1),
+                  Chip(
+                    avatar: const Icon(Icons.cancel, size: 16, color: AppColors.coral),
+                    label: const Text('Not Allowed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    backgroundColor: AppColors.coral.withValues(alpha: 0.1),
                   ),
               ],
             ),
@@ -262,7 +261,7 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                 const Spacer(),
                 TextButton.icon(
                   onPressed: () {
-                    // TODO: Navigate to crew management
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatCrewScreen(boatId: widget.boatId)));
                   },
                   icon: const Icon(Icons.edit, size: 18),
                   label: const Text('Manage'),
@@ -331,7 +330,7 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                 const Spacer(),
                 TextButton.icon(
                   onPressed: () {
-                    // TODO: Navigate to documents
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatDocumentsScreen(boatId: widget.boatId)));
                   },
                   icon: const Icon(Icons.visibility, size: 18),
                   label: const Text('View'),
@@ -486,13 +485,6 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                 const Icon(Icons.timeline, color: AppColors.deepSea),
                 const SizedBox(width: 8),
                 Text('Activity', style: Theme.of(context).textTheme.titleLarge),
-                const Spacer(),
-                TextButton(
-                  onPressed: () {
-                    // TODO: Navigate to full status history
-                  },
-                  child: const Text('View all'),
-                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -525,7 +517,7 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 16, color: color),
@@ -583,8 +575,6 @@ class _BoatOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -599,9 +589,9 @@ class _BoatOverviewCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(boat.name, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                      Text(boat.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
                       if (boat.registrationNumber != null)
-                        Text(boat.registrationNumber!, style: theme.textTheme.bodyMedium),
+                        Text(boat.registrationNumber!, style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                 ),
@@ -630,7 +620,7 @@ class _BoatOverviewCard extends StatelessWidget {
                   if (boat.vesselClass != null)
                     Expanded(child: _DetailTile(icon: Icons.category, label: 'Class', value: boat.vesselClass!)),
                   if (boat.hullMaterial != null)
-                    Expanded(child: _DetailTile(icon: Icons.material, label: 'Hull', value: boat.hullMaterial!)),
+                    Expanded(child: _DetailTile(icon: Icons.directions_boat, label: 'Hull', value: boat.hullMaterial!)),
                 ],
               ),
             ],
@@ -689,13 +679,24 @@ class _QuickActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final actions = [
-      _QuickAction(icon: Icons.description, label: 'Documents', color: AppColors.primary, onTap: () {}),
-      _QuickAction(icon: Icons.groups, label: 'Crew', color: AppColors.safeGreen, onTap: () {}),
-      _QuickAction(icon: Icons.inventory_2, label: 'Equipment', color: AppColors.warningAmber, onTap: () {}),
-      _QuickAction(icon: Icons.qr_code, label: 'QR Code', color: Colors.black87, onTap: () {}),
-      _QuickAction(icon: Icons.shield_outlined, label: 'Readiness', color: AppColors.coral, onTap: () {}),
+      _QuickAction(icon: Icons.description, label: 'Documents', color: AppColors.primary, onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatDocumentsScreen(boatId: boat.id)));
+      }),
+      _QuickAction(icon: Icons.groups, label: 'Crew', color: AppColors.safeGreen, onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatCrewScreen(boatId: boat.id)));
+      }),
+      _QuickAction(icon: Icons.inventory_2, label: 'Equipment', color: AppColors.warningAmber, onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatEquipmentScreen(boatId: boat.id)));
+      }),
+      _QuickAction(icon: Icons.qr_code, label: 'QR Code', color: Colors.black87, onTap: () {
+        if (boat.qrCodeToken != null) {
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatQRScreen(boatId: boat.id)));
+        }
+      }),
+      _QuickAction(icon: Icons.shield_outlined, label: 'Readiness', color: AppColors.coral, onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => TripReadinessScreen(boatId: boat.id)));
+      }),
       _QuickAction(icon: Icons.edit, label: 'Edit', color: AppColors.deepSea, onTap: () {}),
     ];
 
@@ -731,9 +732,9 @@ class _QuickActionGrid extends StatelessWidget {
                       onTap: action.onTap,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: action.color.withOpacity(0.06),
+                          color: action.color.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: action.color.withOpacity(0.15)),
+                          border: Border.all(color: action.color.withValues(alpha: 0.15)),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -785,9 +786,9 @@ class _StatBox extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [

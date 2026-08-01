@@ -405,6 +405,102 @@ class BoatService {
     return BoatResult(data: cached, fromCache: true);
   }
 
+  Future<BoatResult<BoatDocument?>> getDocument(int boatId, int docId) async {
+    try {
+      final data = await ApiClient.instance.getV2('/boats/$boatId/documents/$docId');
+      final doc = BoatDocument.fromJson(data as Map<String, dynamic>);
+      await _repo.upsertDocument(doc);
+      return BoatResult(data: doc, fromCache: false);
+    } catch (_) {
+      final cached = await _repo.getDocuments(boatId);
+      BoatDocument? doc;
+      for (final d in cached) {
+        if (d.id == docId) { doc = d; break; }
+      }
+      return BoatResult(data: doc, fromCache: true);
+    }
+  }
+
+  Future<BoatResult<BoatCrewMember?>> getCrewMember(int boatId, int crewId) async {
+    try {
+      final data = await ApiClient.instance.getV2('/boats/$boatId/crew/$crewId');
+      final member = BoatCrewMember.fromJson(data as Map<String, dynamic>);
+      await _repo.upsertCrewMember(member);
+      return BoatResult(data: member, fromCache: false);
+    } catch (_) {
+      final cached = await _repo.getCrew(boatId);
+      BoatCrewMember? member;
+      for (final c in cached) {
+        if (c.id == crewId) { member = c; break; }
+      }
+      return BoatResult(data: member, fromCache: true);
+    }
+  }
+
+  Future<BoatServiceResult<BoatCrewMember>> updateCrewRole(
+    int boatId,
+    int crewId,
+    String newRole,
+  ) async {
+    try {
+      final data = await ApiClient.instance.patchV2(
+        '/boats/$boatId/crew/$crewId/role',
+        {'new_role': newRole},
+      );
+      final member = BoatCrewMember.fromJson(data as Map<String, dynamic>);
+      await _repo.upsertCrewMember(member);
+      return BoatServiceResult.success(member);
+    } catch (_) {
+      final action = BoatSyncAction(
+        id: _uuid.v4(),
+        action: 'update_crew_role',
+        payload: {'boat_id': boatId, 'crew_id': crewId, 'role': newRole},
+        createdAt: DateTime.now(),
+      );
+      await _repo.queueSyncAction(action);
+      await refreshPendingCount();
+      return BoatServiceResult.offline(message: 'Role update will sync when signal returns');
+    }
+  }
+
+  Future<BoatResult<Map<String, dynamic>>> getReadiness(int boatId) async {
+    try {
+      final data = await ApiClient.instance.getV2('/boats/$boatId/readiness');
+      return BoatResult(data: data as Map<String, dynamic>, fromCache: false);
+    } catch (_) {
+      return BoatResult(data: {}, fromCache: true);
+    }
+  }
+
+  Future<BoatResult<Map<String, dynamic>>> getQR(int boatId) async {
+    try {
+      final data = await ApiClient.instance.getV2('/boats/$boatId/qr');
+      return BoatResult(data: data as Map<String, dynamic>, fromCache: false);
+    } catch (_) {
+      final boat = await _repo.getBoatById(boatId);
+      if (boat != null && boat.qrCodeToken != null) {
+        return BoatResult(
+          data: {
+            'boat_id': boat.id,
+            'qr_code_token': boat.qrCodeToken,
+            'qr_url': 'https://oceanguardian.ai/boat/${boat.qrCodeToken}',
+          },
+          fromCache: true,
+        );
+      }
+      return BoatResult(data: {}, fromCache: true);
+    }
+  }
+
+  Future<BoatResult<List<Map<String, dynamic>>>> getStatusHistory(int boatId) async {
+    try {
+      final data = await ApiClient.instance.getV2('/boats/$boatId/status-history');
+      return BoatResult(data: (data as List).cast<Map<String, dynamic>>(), fromCache: false);
+    } catch (_) {
+      return BoatResult(data: [], fromCache: true);
+    }
+  }
+
   // ── Network Awareness ─────────────────────────────────────────────────────
 
   /// Whether the app currently has connectivity.

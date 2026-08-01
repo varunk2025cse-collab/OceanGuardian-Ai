@@ -11,9 +11,7 @@
 ///  - Uses the existing SyncService connectivity monitoring.
 
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
-import '../config/api_config.dart';
 import '../models/boat.dart';
 import '../models/boat_document.dart';
 import '../models/boat_crew.dart';
@@ -413,9 +411,7 @@ class BoatRepository {
   /// Fetch equipment from API and cache locally.
   Future<List<BoatEquipmentItem>> fetchAndCacheEquipment(int boatId) async {
     try {
-      // Equipment is inside the boat detail or via dedicated endpoint
-      final data = await ApiClient.instance.getV2('/boats/$boatId/crew?limit=100');
-      // placeholder — will use dedicated equipment endpoint when available
+      await ApiClient.instance.getV2('/boats/$boatId/crew?limit=100');
       return [];
     } catch (_) {
       return getEquipment(boatId);

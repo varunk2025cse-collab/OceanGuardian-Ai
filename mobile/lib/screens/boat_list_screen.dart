@@ -15,13 +15,14 @@
 ///  - Responsive layout
 
 import 'package:flutter/material.dart';
-import '../l10n/app_localizations.dart';
 import '../models/boat.dart';
 import '../services/boat_service.dart';
 import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/boat_status_badge.dart';
 import 'boat_detail_screen.dart';
+import 'boat_registration_screen.dart';
+import 'start_trip_screen.dart';
 
 class BoatListScreen extends StatefulWidget {
   const BoatListScreen({super.key});
@@ -94,47 +95,8 @@ class _BoatListScreenState extends State<BoatListScreen> {
     setState(() => _applyFilters());
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'active':
-        return AppColors.safeGreen;
-      case 'registered':
-        return AppColors.primary;
-      case 'inactive':
-        return AppColors.textDisabled;
-      case 'maintenance':
-        return AppColors.warningAmber;
-      case 'emergency':
-        return AppColors.coral;
-      case 'damaged':
-        return AppColors.warning;
-      case 'lost':
-        return Colors.black;
-      case 'decommissioned':
-        return AppColors.textSecondary;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'active': return 'Active';
-      case 'registered': return 'Registered';
-      case 'inactive': return 'Inactive';
-      case 'maintenance': return 'Maintenance';
-      case 'emergency': return 'Emergency';
-      case 'damaged': return 'Damaged';
-      case 'lost': return 'Lost';
-      case 'decommissioned': return 'Decommissioned';
-      default: return status;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-
     return Scaffold(
       backgroundColor: AppColors.sand,
       appBar: AppBar(
@@ -162,7 +124,9 @@ class _BoatListScreenState extends State<BoatListScreen> {
             icon: const Icon(Icons.add),
             tooltip: 'Register a boat',
             onPressed: () {
-              // TODO: Navigate to boat registration wizard (Task 2.5)
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BoatRegistrationScreen()),
+              );
             },
           ),
         ],
@@ -279,7 +243,9 @@ class _BoatListScreenState extends State<BoatListScreen> {
                                   const SizedBox(height: 12),
                                   ElevatedButton.icon(
                                     onPressed: () {
-                                      // TODO: Navigate to registration wizard
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(builder: (_) => const BoatRegistrationScreen()),
+                                      );
                                     },
                                     icon: const Icon(Icons.add),
                                     label: const Text('Register your first boat'),
@@ -326,7 +292,7 @@ class _BoatListScreenState extends State<BoatListScreen> {
             _applyFilters();
           });
         },
-        selectedColor: AppColors.primary.withOpacity(0.2),
+        selectedColor: AppColors.primary.withValues(alpha: 0.2),
         checkmarkColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -345,8 +311,6 @@ class _BoatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isOnline = SyncService.instance.status.value == SyncUiStatus.online ||
-        SyncService.instance.status.value == SyncUiStatus.syncing;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -371,7 +335,7 @@ class _BoatCard extends StatelessWidget {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: AppColors.deepSea.withOpacity(0.1),
+                          color: AppColors.deepSea.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(Icons.directions_boat, color: AppColors.deepSea, size: 32),
@@ -455,7 +419,11 @@ class _BoatCard extends StatelessWidget {
                           child: FilledButton.icon(
                             onPressed: boat.isTripReady
                                 ? () {
-                                    // TODO: Navigate to start trip with this boat
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => StartTripScreen(boatId: boat.id),
+                                      ),
+                                    );
                                   }
                                 : null,
                             icon: const Icon(Icons.sailing, size: 20),
@@ -492,9 +460,9 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
