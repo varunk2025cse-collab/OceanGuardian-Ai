@@ -6,6 +6,7 @@ const NAV = [
   { to: '/sos',       label: 'SOS Alerts',   icon: '🆘' },
   { to: '/map',       label: 'Live Map',     icon: '🗺️' },
   { to: '/fleet',     label: 'Fleet Ops',    icon: '🚤' },
+  { to: '/trips',     label: 'Trip Ops',     icon: '⛵' },
   { to: '/fishermen', label: 'Fishermen',    icon: '🎣' },
   { to: '/incidents', label: 'Incidents',    icon: '🚨' },
   { to: '/analytics', label: 'Analytics',    icon: '📈' },

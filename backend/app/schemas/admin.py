@@ -41,6 +41,26 @@ class ActiveTripSummary(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TripAdminOut(BaseModel):
+    id: int
+    user_id: int
+    boat_id: int | None
+    status: str
+    start_time: datetime
+    end_time: datetime | None
+    estimated_return_at: datetime | None
+    start_latitude: float | None
+    start_longitude: float | None
+    destination: str | None
+    notes: str | None
+    created_at: datetime
+    fisherman: UserOut
+    boat_name: str | None = None
+    boat_registration_number: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
 class FishermanAdminOut(BaseModel):
     id: int
     full_name: str
@@ -80,6 +100,13 @@ class PaginatedSOS(BaseModel):
 
 class PaginatedFishermen(BaseModel):
     items: list[FishermanAdminOut]
+    total: int
+    skip: int
+    limit: int
+
+
+class PaginatedTrips(BaseModel):
+    items: list[TripAdminOut]
     total: int
     skip: int
     limit: int

@@ -24,6 +24,7 @@ from app.models.user import User, UserRole
 from app.schemas.admin import (
     DashboardStats, FishermanAdminOut, SOSAlertAdminOut,
     PaginatedSOS, PaginatedFishermen, ActiveTripSummary,
+    TripAdminOut, PaginatedTrips,
 )
 from app.schemas.location import LocationOut
 from app.schemas.user import UserOut
@@ -230,3 +231,52 @@ def fisherman_locations(
         .limit(limit)
         .all()
     )
+
+
+# ── Trip overview ─────────────────────────────────────────────────────────────
+
+def _build_trip_admin_out(trip: Trip, db: Session) -> TripAdminOut:
+    fisherman = db.query(User).filter(User.id == trip.user_id).first()
+    boat = db.query(Boat).filter(Boat.id == trip.boat_id).first() if trip.boat_id else None
+    return TripAdminOut(
+        id=trip.id, user_id=trip.user_id, boat_id=trip.boat_id,
+        status=trip.status, start_time=trip.start_time, end_time=trip.end_time,
+        estimated_return_at=trip.estimated_return_at,
+        start_latitude=trip.start_latitude, start_longitude=trip.start_longitude,
+        destination=trip.destination, notes=trip.notes,
+        created_at=trip.created_at,
+        fisherman=UserOut.model_validate(fisherman),
+        boat_name=boat.name if boat else None,
+        boat_registration_number=boat.registration_number if boat else None,
+    )
+
+@router.get("/trips", response_model=PaginatedTrips)
+def list_trips(
+    trip_status: str | None = Query(default=None, alias="status"),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
+    _: User = Depends(get_current_operator),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Trip)
+    if trip_status:
+        query = query.filter(Trip.status == trip_status)
+    total = query.count()
+    trips = query.order_by(Trip.start_time.desc()).offset(skip).limit(limit).all()
+    return PaginatedTrips(
+        items=[_build_trip_admin_out(t, db) for t in trips],
+        total=total, skip=skip, limit=limit,
+    )
+
+
+@router.get("/trips/{trip_id}", response_model=TripAdminOut)
+def get_trip_detail(
+    trip_id: int,
+    _: User = Depends(get_current_operator),
+    db: Session = Depends(get_db),
+):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+    return _build_trip_admin_out(trip, db)
+
