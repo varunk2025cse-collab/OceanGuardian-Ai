@@ -148,7 +148,7 @@ class BoatHealthService:
         fuel_logs = (
             db.query(BoatFuelLog)
             .filter(BoatFuelLog.boat_id == boat_id)
-            .order_by(BoatFuelLog.timestamp.desc())
+            .order_by(BoatFuelLog.timestamp.desc(), BoatFuelLog.id.desc())
             .limit(20)
             .all()
         )
