@@ -10,7 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_operator, get_current_user
+from app.core.deps import get_current_operator
+from app.core.rate_limit import rate_limit
 from app.database import get_db
 from app.models.user import User
 from app.services.ai.dispatcher import AIQueryIntent, run_query
@@ -38,10 +39,10 @@ def list_intents(_: User = Depends(get_current_operator)):
     return {"intents": [{"id": k, "label": v} for k, v in AIQueryIntent.LABELS.items()]}
 
 
-@router.post("/query", response_model=AIQueryOut)
+@router.post("/query", response_model=AIQueryOut, dependencies=[Depends(rate_limit("ai_query", limit=5))])
 def query(
     payload: AIQueryIn,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_operator),
     db: Session = Depends(get_db),
 ):
     if payload.intent not in AIQueryIntent.ALL:

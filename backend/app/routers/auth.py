@@ -10,9 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from app.core.deps import get_current_user
+from fastapi.security import OAuth2PasswordBearer
+from app.core.deps import get_current_user, oauth2_scheme
 from app.core.rate_limit import rate_limit
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, TokenBlocklist
 from app.schemas.user import UserRegister, UserLogin, UserOut, TokenPair, RefreshRequest
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -74,10 +75,28 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     data = decode_token(payload.refresh_token)
     if not data or data.get("type") != "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        
+    jti = data.get("jti")
+    if not jti or db.query(TokenBlocklist).filter(TokenBlocklist.jti == jti).first():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        
     user = db.query(User).filter(User.id == int(data["sub"])).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
     return _issue_tokens(user)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    payload = decode_token(token)
+    if payload and "jti" in payload:
+        blocklist = TokenBlocklist(jti=payload["jti"])
+        db.add(blocklist)
+        db.commit()
 
 
 @router.get("/me", response_model=UserOut)

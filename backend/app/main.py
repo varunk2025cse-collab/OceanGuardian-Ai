@@ -63,6 +63,7 @@ from app.routers.v2 import weather as weather_v2                           # noq
 from app.routers.v2 import incidents as incidents_v2                       # noqa: E402
 from app.routers.v2 import ai as ai_v2                                     # noqa: E402
 from app.routers.v2 import boat_equipment_inspections as equip_insp_v2      # noqa: E402
+from app.routers.v2 import intelligence as intelligence_v2                 # noqa: E402
 
 app = FastAPI(
     title=settings.app_name,
@@ -115,6 +116,7 @@ app.include_router(incidents_v2.router)
 app.include_router(ai_v2.router)
 app.include_router(boats_v2.router)
 app.include_router(equip_insp_v2.router)
+app.include_router(intelligence_v2.router)
 
 
 @app.get("/", tags=["health"])

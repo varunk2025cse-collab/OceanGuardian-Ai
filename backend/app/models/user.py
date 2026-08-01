@@ -67,3 +67,13 @@ class User(Base):
             except ValueError:
                 pass
         super().__init__(*args, **kwargs)
+
+
+class TokenBlocklist(Base):
+    """Stores revoked JWT tokens until they naturally expire."""
+    __tablename__ = "token_blocklist"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    jti = Column(String(255), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+

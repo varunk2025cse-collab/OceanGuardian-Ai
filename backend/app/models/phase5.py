@@ -59,7 +59,7 @@ class CopilotSession(Base):
 
     # Relationships
     fisherman = relationship("User", foreign_keys=[fisherman_id])
-    conversations = relationship("CopilotConversation", cascade="all, delete-orphan")
+    conversations = relationship("CopilotConversation", cascade="all, delete-orphan", back_populates="session")
 
 
 class CopilotConversation(Base):
@@ -78,7 +78,7 @@ class CopilotConversation(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    session = relationship("CopilotSession", foreign_keys=[session_id])
+    session = relationship("CopilotSession", foreign_keys=[session_id], back_populates="conversations")
 
 
 # =================================================================
@@ -371,8 +371,8 @@ class Harbor(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    reviews = relationship("HarborReview", cascade="all, delete-orphan")
-    visits = relationship("HarborVisit", cascade="all, delete-orphan")
+    reviews = relationship("HarborReview", cascade="all, delete-orphan", back_populates="harbor")
+    visits = relationship("HarborVisit", cascade="all, delete-orphan", back_populates="harbor")
 
 
 class HarborReview(Base):
@@ -390,7 +390,7 @@ class HarborReview(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    harbor = relationship("Harbor", foreign_keys=[harbor_id])
+    harbor = relationship("Harbor", foreign_keys=[harbor_id], back_populates="reviews")
     fisherman = relationship("User", foreign_keys=[fisherman_id])
 
 
@@ -409,7 +409,7 @@ class HarborVisit(Base):
 
     # Relationships
     trip = relationship("Trip", foreign_keys=[trip_id])
-    harbor = relationship("Harbor", foreign_keys=[harbor_id])
+    harbor = relationship("Harbor", foreign_keys=[harbor_id], back_populates="visits")
     fisherman = relationship("User", foreign_keys=[fisherman_id])
 
 
