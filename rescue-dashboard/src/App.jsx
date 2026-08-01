@@ -6,6 +6,7 @@ import { LoginPagePremium } from './pages/LoginPagePremium'
 import { DashboardPagePremium } from './pages/DashboardPagePremium'
 import { SOSAlertsPagePremium } from './pages/SOSAlertsPagePremium'
 import { MapPagePremium } from './pages/MapPagePremium'
+import { FleetOperationsPage } from './pages/FleetOperationsPage'
 import { FishermenPagePremium } from './pages/FishermenPagePremium'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { IncidentsPage } from './pages/IncidentsPage'
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/" element={<DashboardPagePremium />} />
             <Route path="/sos" element={<SOSPageWrapper />} />
             <Route path="/map" element={<MapPagePremium />} />
+            <Route path="/fleet" element={<FleetOperationsPage />} />
             <Route path="/fishermen" element={<FishermenPagePremium />} />
             <Route path="/incidents" element={<IncidentsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
