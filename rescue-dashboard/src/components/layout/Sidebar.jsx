@@ -8,6 +8,7 @@ const NAV = [
   { to: '/fleet',     label: 'Fleet Ops',    icon: '🚤' },
   { to: '/trips',     label: 'Trip Ops',     icon: '⛵' },
   { to: '/harbors',   label: 'Harbor Ops',   icon: '⚓' },
+  { to: '/weather',   label: 'Weather Center',icon:'🌦️' },
   { to: '/fishermen', label: 'Fishermen',    icon: '🎣' },
   { to: '/incidents', label: 'Incidents',    icon: '🚨' },
   { to: '/analytics', label: 'Analytics',    icon: '📈' },

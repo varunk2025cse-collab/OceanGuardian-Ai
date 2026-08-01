@@ -9,6 +9,7 @@ import { MapPagePremium } from './pages/MapPagePremium'
 import { FleetOperationsPage } from './pages/FleetOperationsPage'
 import { TripOperationsPage } from './pages/TripOperationsPage'
 import { HarborOperationsPage } from './pages/HarborOperationsPage'
+import { WeatherCenterPage } from './pages/WeatherCenterPage'
 import { FishermenPagePremium } from './pages/FishermenPagePremium'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { IncidentsPage } from './pages/IncidentsPage'
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/fleet" element={<FleetOperationsPage />} />
             <Route path="/trips" element={<TripOperationsPage />} />
             <Route path="/harbors" element={<HarborOperationsPage />} />
+            <Route path="/weather" element={<WeatherCenterPage />} />
             <Route path="/fishermen" element={<FishermenPagePremium />} />
             <Route path="/incidents" element={<IncidentsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
