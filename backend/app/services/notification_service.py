@@ -152,3 +152,35 @@ class NotificationEngine:
         for row in created:
             db.refresh(row)
         return created
+
+    @staticmethod
+    def publish_family_event(
+        db: Session,
+        fisherman_id: int,
+        message: str,
+        related_event_id: int | None = None,
+        priority: NotificationPriority = NotificationPriority.high,
+        notification_type: str = "push",
+    ) -> tuple[int, str]:
+        """Compatibility helper: publish a family notification request to the internal EventBus.
+
+        This does not replace the existing notify_family_of_event immediate-send path — it
+        offers a durable event ingestion point for a gradual rollout. Returns (event_id, correlation_id).
+        """
+        try:
+            from app.event_bus import EventBus
+        except Exception:
+            # If EventBus is not available for any reason, fail gracefully
+            logger.exception("EventBus unavailable while publishing family event")
+            raise
+
+        payload = {
+            "fisherman_id": fisherman_id,
+            "message": message,
+            "related_event_id": related_event_id,
+            "notification_type": notification_type,
+        }
+        metadata = {"priority": priority.value}
+        event_id, correlation_id = EventBus.publish(db, event_type="family.notification.request", payload=payload, metadata=metadata, priority=priority.value, source_module="family_portal")
+        logger.info("Published family notification event event_id=%s corr=%s fisherman_id=%s priority=%s", event_id, correlation_id, fisherman_id, priority.value)
+        return event_id, correlation_id

@@ -64,6 +64,14 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from_address: str | None = None
 
+    # Notification Engine configuration
+    notification_worker_concurrency: int = 4
+    notification_worker_batch_size: int = 20
+    notification_default_retry_policy: str = "exponential"  # exponential | linear
+    notification_retry_jitter_seconds: int = 30
+    notification_max_attempts: int = 10
+    notification_queue_poll_interval_seconds: int = 5
+
     rate_limit_per_minute: int = 30
 
     # Set by scripts/demo_mode.{sh,ps1} — never set this in a real
