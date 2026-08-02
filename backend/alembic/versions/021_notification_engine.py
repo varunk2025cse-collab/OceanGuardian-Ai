@@ -10,7 +10,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '021_notification_engine'
-down_revision = None
+down_revision = '009_boat_management_enterprise'
 branch_labels = None
 depends_on = None
 
