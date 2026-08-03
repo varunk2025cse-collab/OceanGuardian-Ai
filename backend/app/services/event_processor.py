@@ -9,7 +9,8 @@ Behavior:
 - record initial lifecycle event
 - mark event COMPLETED when queued
 """
-from datetime import datetime
+from datetime import datetime, timezone
+import logging
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -21,6 +22,8 @@ from app.models.notification_models import (
 )
 from app.models.family_link import FamilyLink
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 
 class EventProcessor:
@@ -37,8 +40,21 @@ class EventProcessor:
         total_created = 0
         for ev in events:
             try:
-                ev.status = "PROCESSING"
-                ev.processed_at = datetime.utcnow()
+                now = datetime.now(timezone.utc)
+                rows_updated = (
+                    db.query(NotificationEventStream)
+                    .filter(NotificationEventStream.id == ev.id, NotificationEventStream.status == "CREATED")
+                    .update(
+                        {
+                            NotificationEventStream.status: "PROCESSING",
+                            NotificationEventStream.processed_at: now,
+                        },
+                        synchronize_session=False,
+                    )
+                )
+                if not rows_updated:
+                    # Another processor claimed this event first.
+                    continue
                 db.commit()
 
                 if ev.event_type == "family.notification.request":
@@ -75,8 +91,8 @@ class EventProcessor:
                             priority=ev.priority or "NORMAL",
                             status="QUEUED",
                             correlation_id=ev.correlation_id,
-                            created_at=datetime.utcnow(),
-                            updated_at=datetime.utcnow(),
+                            created_at=datetime.now(timezone.utc),
+                            updated_at=datetime.now(timezone.utc),
                         )
                         db.add(q)
                         db.commit()
@@ -89,7 +105,7 @@ class EventProcessor:
                             detail="Queued by EventProcessor",
                             actor="event_processor",
                             correlation_id=ev.correlation_id,
-                            created_at=datetime.utcnow(),
+                            created_at=datetime.now(timezone.utc),
                         )
                         db.add(lle)
                         db.commit()
@@ -97,9 +113,18 @@ class EventProcessor:
 
                 # mark event completed
                 ev.status = "COMPLETED"
-                ev.processed_at = datetime.utcnow()
+                ev.processed_at = datetime.now(timezone.utc)
                 db.commit()
-            except Exception:
+            except Exception as exc:
+                logger.exception("Failed processing notification event %s", ev.id)
                 db.rollback()
-                # leave the event in CREATED or mark failed — for now set to CREATED for retry
+                try:
+                    retry_event = db.query(NotificationEventStream).filter(NotificationEventStream.id == ev.id).first()
+                    if retry_event:
+                        retry_event.status = "CREATED"
+                        retry_event.processed_at = None
+                        db.commit()
+                except Exception:
+                    db.rollback()
+                # leave the event in CREATED for retry
         return total_created

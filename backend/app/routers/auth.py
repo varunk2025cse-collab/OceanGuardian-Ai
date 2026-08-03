@@ -75,14 +75,25 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     data = decode_token(payload.refresh_token)
     if not data or data.get("type") != "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
-        
+
     jti = data.get("jti")
-    if not jti or db.query(TokenBlocklist).filter(TokenBlocklist.jti == jti).first():
+    if not jti:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
-        
-    user = db.query(User).filter(User.id == int(data["sub"])).first()
+
+    # Reject already-used or revoked refresh tokens
+    if db.query(TokenBlocklist).filter(TokenBlocklist.jti == jti).first():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+    user = db.query(User).filter(User.id == int(data["sub"])) .first()
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+    # Token rotation: mark the presented refresh token as used so it cannot be replayed.
+    blocklist = TokenBlocklist(jti=jti)
+    db.add(blocklist)
+    db.commit()
+
+    # Issue a fresh token pair
     return _issue_tokens(user)
 
 

@@ -26,8 +26,8 @@ def upgrade():
         sa.Column('priority', sa.String(length=50), nullable=False, server_default='NORMAL'),
         sa.Column('source_module', sa.String(length=100), nullable=True),
         sa.Column('status', sa.String(length=50), nullable=False, server_default='CREATED'),
-        sa.Column('processed_at', sa.DateTime(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.Column('processed_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
     op.create_index(op.f('ix_notification_event_stream_correlation_id'), 'notification_event_stream', ['correlation_id'], unique=False)
 
@@ -43,15 +43,15 @@ def upgrade():
         sa.Column('priority', sa.String(length=50), nullable=False, server_default='NORMAL'),
         sa.Column('status', sa.String(length=50), nullable=False, server_default='QUEUED'),
         sa.Column('attempt_count', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('next_retry_at', sa.DateTime(), nullable=True),
-        sa.Column('timeout_at', sa.DateTime(), nullable=True),
-        sa.Column('retry_deadline', sa.DateTime(), nullable=True),
+        sa.Column('next_retry_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('timeout_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('retry_deadline', sa.DateTime(timezone=True), nullable=True),
         sa.Column('last_error', sa.Text(), nullable=True),
         sa.Column('correlation_id', sa.String(length=64), nullable=False),
         sa.Column('locked_by', sa.String(length=200), nullable=True),
         sa.Column('locked_at', sa.DateTime(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
     op.create_index(op.f('ix_notification_queue_items_correlation_id'), 'notification_queue_items', ['correlation_id'], unique=False)
     op.create_index(op.f('ix_notification_queue_items_status_priority_next_retry'), 'notification_queue_items', ['status', 'priority', 'next_retry_at'], unique=False)
@@ -63,7 +63,7 @@ def upgrade():
         sa.Column('state', sa.String(length=50), nullable=False),
         sa.Column('detail', sa.Text(), nullable=True),
         sa.Column('actor', sa.String(length=200), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column('correlation_id', sa.String(length=64), nullable=False),
     )
 
@@ -77,10 +77,10 @@ def upgrade():
         sa.Column('subject', sa.String(length=400), nullable=True),
         sa.Column('body', sa.Text(), nullable=False),
         sa.Column('placeholders_json', sa.JSON(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=True, server_default=sa.text('true')),
         sa.Column('created_by', sa.Integer(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
 
     op.create_table(
@@ -90,7 +90,7 @@ def upgrade():
         sa.Column('preferred_channels', sa.JSON(), nullable=True),
         sa.Column('quiet_hours', sa.JSON(), nullable=True),
         sa.Column('emergency_override', sa.Boolean(), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
 
     op.create_table(
@@ -101,10 +101,10 @@ def upgrade():
         sa.Column('failure_count', sa.BigInteger(), nullable=True),
         sa.Column('avg_latency_ms', sa.Float(), nullable=True),
         sa.Column('avg_retry_count', sa.Float(), nullable=True),
-        sa.Column('last_failure_at', sa.DateTime(), nullable=True),
-        sa.Column('last_success_at', sa.DateTime(), nullable=True),
+        sa.Column('last_failure_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('last_success_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('availability_score', sa.Float(), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
 
 

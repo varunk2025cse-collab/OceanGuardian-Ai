@@ -2,7 +2,7 @@
 Lightweight EventBus placed at app/event_bus.py to avoid adding new packages directories in this sprint.
 Provides publish/fetch helpers built on SQLAlchemy models defined in app.models.notification_models.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from typing import Any, Dict, Tuple
 
@@ -28,7 +28,7 @@ class EventBus:
             priority=priority,
             source_module=source_module,
             status="CREATED",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         db.add(row)
         db.commit()
@@ -51,7 +51,7 @@ class EventBus:
         if not row:
             return False
         row.status = "PROCESSING"
-        row.processed_at = datetime.utcnow()
+        row.processed_at = datetime.now(timezone.utc)
         db.commit()
         return True
 
@@ -61,6 +61,6 @@ class EventBus:
         if not row:
             return False
         row.status = "COMPLETED"
-        row.processed_at = datetime.utcnow()
+        row.processed_at = datetime.now(timezone.utc)
         db.commit()
         return True
