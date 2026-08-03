@@ -22,7 +22,12 @@ def setup_test_db():
     from app.main import app  # registers all models via router imports  # noqa: F401
     # Ensure demo seed runs so tests that expect an operator account pass.
     os.environ.setdefault("SEED_DEMO_DATA", "true")
-    Base.metadata.create_all(bind=engine)
+    # Create schema while temporarily disabling foreign key checks to avoid
+    # SQLite drop/create ordering problems during repeated test runs.
+    with engine.begin() as conn:
+        conn.execute("PRAGMA foreign_keys=OFF")
+        Base.metadata.create_all(bind=conn)
+        conn.execute("PRAGMA foreign_keys=ON")
 
     # Run seed script to populate reference/demo data
     try:
@@ -32,7 +37,12 @@ def setup_test_db():
         print("Warning: seed.py failed during test setup — some tests may rely on seeded data.")
 
     yield
-    Base.metadata.drop_all(bind=engine)
+    # Drop schema while temporarily disabling foreign key checks to avoid
+    # SQLite ordering errors when tables have cyclic foreign keys.
+    with engine.begin() as conn:
+        conn.execute("PRAGMA foreign_keys=OFF")
+        Base.metadata.drop_all(bind=conn)
+        conn.execute("PRAGMA foreign_keys=ON")
     engine.dispose()
     if os.path.exists("test_all.db"):
         os.remove("test_all.db")
