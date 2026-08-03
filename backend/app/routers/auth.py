@@ -110,6 +110,32 @@ def logout(
         db.commit()
 
 
+@router.post("/logout_all", status_code=status.HTTP_204_NO_CONTENT)
+def logout_all(
+    payload: dict,
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    """Revoke current access token and optional refresh token provided in the body.
+
+    Body: { "refresh_token": "..." }  (refresh_token optional)
+    """
+    # Block the presented access token
+    access_payload = decode_token(token)
+    if access_payload and "jti" in access_payload:
+        db.add(TokenBlocklist(jti=access_payload["jti"]))
+
+    # Block the provided refresh token (if any)
+    provided_refresh = payload.get("refresh_token") if isinstance(payload, dict) else None
+    if provided_refresh:
+        refresh_payload = decode_token(provided_refresh)
+        if refresh_payload and refresh_payload.get("type") == "refresh" and "jti" in refresh_payload:
+            db.add(TokenBlocklist(jti=refresh_payload["jti"]))
+
+    db.commit()
+
+
 @router.get("/me", response_model=UserOut)
 def read_profile(current_user: User = Depends(get_current_user)):
     return current_user
