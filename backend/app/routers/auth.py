@@ -13,8 +13,13 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from fastapi.security import OAuth2PasswordBearer
 from app.core.deps import get_current_user, oauth2_scheme
 from app.core.rate_limit import rate_limit
-from app.models.user import User, UserRole, TokenBlocklist
-from app.schemas.user import UserRegister, UserLogin, UserOut, TokenPair, RefreshRequest
+from app.models.user import User, UserRole, TokenBlocklist, PasswordResetToken
+from app.schemas.user import UserRegister, UserLogin, UserOut, TokenPair, RefreshRequest, PasswordResetRequest, PasswordResetConfirm
+import hashlib
+from datetime import datetime, timezone, timedelta
+import uuid
+import logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -95,6 +100,56 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
 
     # Issue a fresh token pair
     return _issue_tokens(user)
+
+
+@router.post("/forgot", status_code=status.HTTP_202_ACCEPTED)
+def forgot_password(payload: PasswordResetRequest, db: Session = Depends(get_db)):
+    # Don't reveal whether a phone number is registered — return 202 regardless.
+    user = db.query(User).filter(User.phone_number == payload.phone_number).first()
+    if not user:
+        # Still return 202 to avoid user enumeration
+        return {"status": "ok"}
+
+    # Create a one-time token and persist only a hash of it
+    raw_token = uuid.uuid4().hex
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    prt = PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=expires_at)
+    db.add(prt)
+    db.commit()
+
+    # TODO: integrate with notification providers (SMS/Push/Email). For now, log the token
+    # so operators/developers can use it in staging/test environments.
+    logger.info("Password reset token for user %s: %s", user.phone_number, raw_token)
+
+    return {"status": "ok"}
+
+
+@router.post("/reset", status_code=status.HTTP_200_OK)
+def reset_password(payload: PasswordResetConfirm, db: Session = Depends(get_db)):
+    token_hash = hashlib.sha256(payload.token.encode("utf-8")).hexdigest()
+    now = datetime.now(timezone.utc)
+    prt = (
+        db.query(PasswordResetToken)
+        .filter(PasswordResetToken.token_hash == token_hash, PasswordResetToken.used == False)
+        .first()
+    )
+    if not prt or prt.expires_at < now:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+
+    user = db.query(User).filter(User.id == prt.user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
+
+    # Update password and mark token used. Also update password_changed_at to invalidate old tokens.
+    user.password_hash = hash_password(payload.new_password)
+    user.password_changed_at = now
+    prt.used = True
+    db.add(user)
+    db.add(prt)
+    db.commit()
+
+    return {"status": "ok"}
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
