@@ -9,12 +9,12 @@ from app.database import get_db
 from app.core.deps import get_current_operator
 from app.models.user import User, UserRole
 from app.schemas.user import UserOut
-from app.schemas.admin import PaginatedFishermen
+from app.schemas.admin import PaginatedUsers
 
 router = APIRouter(prefix="/api/v1/admin/users", tags=["admin-users"])
 
 
-@router.get("/", response_model=PaginatedFishermen)
+@router.get("/", response_model=PaginatedUsers)
 def list_users(
     role: str | None = Query(default=None),
     q: str | None = Query(default=None),

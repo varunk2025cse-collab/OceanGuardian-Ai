@@ -112,6 +112,13 @@ class PaginatedTrips(BaseModel):
     limit: int
 
 
+class PaginatedUsers(BaseModel):
+    items: list[UserOut]
+    total: int
+    skip: int
+    limit: int
+
+
 class RiskScore(BaseModel):
     score: int        # 0, 1, 2
     label: str        # "safe", "moderate", "dangerous"
