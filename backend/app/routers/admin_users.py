@@ -42,7 +42,7 @@ def list_users(
         items.append(
             UserOut.model_validate(u)
         )
-    return PaginatedFishermen(items=items, total=total, skip=skip, limit=limit)
+    return PaginatedUsers(items=items, total=total, skip=skip, limit=limit)
 
 
 @router.get("/{user_id}", response_model=UserOut)
