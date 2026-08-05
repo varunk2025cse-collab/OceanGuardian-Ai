@@ -73,7 +73,7 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
   Future<void> _showAddEquipmentDialog() async {
     final nameCtrl = TextEditingController();
     final qtyCtrl = TextEditingController(text: '1');
-    String category = 'life_saving';
+    String category = EquipmentCategories.lifeSaving;
     String condition = 'good';
     bool isMandatory = false;
 
@@ -101,17 +101,25 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
                       labelText: 'Category', prefixIcon: Icon(Icons.category)),
                   items: const [
                     DropdownMenuItem(
-                        value: 'life_saving', child: Text('Life Saving')),
+                        value: EquipmentCategories.lifeSaving,
+                        child: Text('Life Saving')),
                     DropdownMenuItem(
-                        value: 'fire_safety', child: Text('Fire Safety')),
+                        value: EquipmentCategories.fireSafety,
+                        child: Text('Fire Safety')),
                     DropdownMenuItem(
-                        value: 'communication', child: Text('Communication')),
+                        value: EquipmentCategories.communication,
+                        child: Text('Communication')),
                     DropdownMenuItem(
-                        value: 'navigation', child: Text('Navigation')),
+                        value: EquipmentCategories.navigation,
+                        child: Text('Navigation')),
                     DropdownMenuItem(
-                        value: 'fishing_gear', child: Text('Fishing Gear')),
-                    DropdownMenuItem(value: 'engine', child: Text('Engine')),
-                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                        value: EquipmentCategories.fishingGear,
+                        child: Text('Fishing Gear')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.engineSpare,
+                        child: Text('Engine Spare')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.other, child: Text('Other')),
                   ],
                   onChanged: (v) {
                     if (v != null) setDialogState(() => category = v);
@@ -170,11 +178,14 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
                   });
                   await _load();
                 } catch (e) {
-                  if (mounted)
+                  if (mounted) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(SnackBar(content: Text('Failed: $e')));
+                  }
                 } finally {
-                  if (mounted) setState(() => _loading = false);
+                  if (mounted) {
+                    setState(() => _loading = false);
+                  }
                 }
               },
               child: const Text('Add'),

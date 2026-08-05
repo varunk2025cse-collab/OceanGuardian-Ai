@@ -1,9 +1,11 @@
+from datetime import date, timedelta
+
 from fastapi.testclient import TestClient
 
 from app.core.deps import get_db
 from app.core.security import create_access_token
 from app.main import app
-from app.models.boat import Boat, BoatEquipmentItem
+from app.models.boat import Boat, BoatEquipmentItem, BoatInspection
 from app.models.user import User, UserRole
 
 client = TestClient(app)
@@ -64,10 +66,28 @@ def _create_equipment(db, boat, created_by):
     return item
 
 
+def _create_inspection(db, boat, created_by, result='passed'):
+    inspection = BoatInspection(
+        boat_id=boat.id,
+        inspection_type='annual_safety',
+        inspector_name='Inspector Name',
+        inspector_authority='Maritime Safety Authority',
+        inspection_date=date.today(),
+        next_due_date=date.today() + timedelta(days=365),
+        result=result,
+        findings='All systems normal',
+        certificate_number='CERT-0001',
+        created_by=created_by,
+    )
+    db.add(inspection)
+    db.commit()
+    db.refresh(inspection)
+    return inspection
+
+
 def _auth_headers(user):
     token = create_access_token(subject=str(user.id))
     return {"Authorization": f"Bearer {token}"}
-
 
 def test_list_boat_equipment_items(db):
     app.dependency_overrides[get_db] = _override_get_db(db)
@@ -114,3 +134,56 @@ def test_add_boat_equipment_item(db):
         assert data["is_mandatory"] is False
     finally:
         app.dependency_overrides.clear()
+
+
+def test_list_boat_inspections(db):
+    app.dependency_overrides[get_db] = _override_get_db(db)
+    try:
+        fisherman = _create_fisherman(db, "+919990000012", "Fisherman Inspect")
+        boat = _create_boat(db, fisherman)
+        _create_inspection(db, boat, fisherman.id)
+
+        headers = _auth_headers(fisherman)
+        response = client.get(f"/api/v2/boats/{boat.id}/inspections", headers=headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["inspection_type"] == "annual_safety"
+        assert data[0]["result"] == "passed"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_add_boat_inspection(db):
+    app.dependency_overrides[get_db] = _override_get_db(db)
+    try:
+        fisherman = _create_fisherman(db, "+919990000013", "Fisherman Add Inspect")
+        boat = _create_boat(db, fisherman)
+
+        headers = _auth_headers(fisherman)
+        payload = {
+            "inspection_type": "annual_safety",
+            "inspection_date": date.today().isoformat(),
+            "result": "passed",
+            "inspector_name": "Inspector Name",
+            "inspector_authority": "Maritime Safety Authority",
+            "findings": "Looks good",
+            "corrective_actions": "None",
+            "certificate_number": "CERT-1001",
+        }
+        response = client.post(
+            f"/api/v2/boats/{boat.id}/inspections",
+            json=payload,
+            headers=headers,
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["inspection_type"] == "annual_safety"
+        assert data["result"] == "passed"
+        assert data["inspector_name"] == "Inspector Name"
+    finally:
+        app.dependency_overrides.clear()
+

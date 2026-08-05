@@ -53,14 +53,16 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
     setState(() => _loading = true);
     try {
       // Load boat
-      final boatResult = await BoatService.instance.getBoat(widget.boatId, forceRefresh: true);
+      final boatResult =
+          await BoatService.instance.getBoat(widget.boatId, forceRefresh: true);
       if (boatResult.data != null) {
         _boat = boatResult.data;
       }
 
       // Load documents in parallel
       try {
-        final docResult = await BoatService.instance.getDocuments(widget.boatId);
+        final docResult =
+            await BoatService.instance.getDocuments(widget.boatId);
         _documents = docResult.data;
       } catch (_) {}
 
@@ -70,9 +72,17 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
         _crew = crewResult.data;
       } catch (_) {}
 
+      // Load equipment and attach it to the detail view.
+      try {
+        final equipmentResult =
+            await BoatService.instance.getEquipment(widget.boatId);
+        _equipment = equipmentResult.data;
+      } catch (_) {}
+
       // Load readiness
       try {
-        final data = await ApiClient.instance.getV2('/boats/${widget.boatId}/readiness');
+        final data =
+            await ApiClient.instance.getV2('/boats/${widget.boatId}/readiness');
         _readiness = data as Map<String, dynamic>?;
       } catch (_) {}
     } catch (_) {}
@@ -103,9 +113,11 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.directions_boat_outlined, size: 64, color: AppColors.textDisabled),
+                      const Icon(Icons.directions_boat_outlined,
+                          size: 64, color: AppColors.textDisabled),
                       const SizedBox(height: 16),
-                      Text('Boat not found', style: Theme.of(context).textTheme.titleLarge),
+                      Text('Boat not found',
+                          style: Theme.of(context).textTheme.titleLarge),
                     ],
                   ),
                 )
@@ -142,7 +154,8 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
     final allowed = _readiness!['trip_allowed'] as bool? ?? false;
     final score = (_readiness!['safety_score'] as num?)?.toDouble() ?? 0;
     final status = _readiness!['overall_status'] as String? ?? 'UNSAFE';
-    final blocking = (_readiness!['blocking_issues'] as List?)?.cast<String>() ?? [];
+    final blocking =
+        (_readiness!['blocking_issues'] as List?)?.cast<String>() ?? [];
     final warnings = (_readiness!['warnings'] as List?)?.cast<String>() ?? [];
 
     return Card(
@@ -155,16 +168,22 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
               children: [
                 const Icon(Icons.shield_outlined, color: AppColors.deepSea),
                 const SizedBox(width: 8),
-                Text('Trip Readiness', style: Theme.of(context).textTheme.titleLarge),
+                Text('Trip Readiness',
+                    style: Theme.of(context).textTheme.titleLarge),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _readinessColor(status).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _readinessColor(status), width: 2),
+                    border:
+                        Border.all(color: _readinessColor(status), width: 2),
                   ),
-                  child: Text(status, style: TextStyle(color: _readinessColor(status), fontWeight: FontWeight.w800)),
+                  child: Text(status,
+                      style: TextStyle(
+                          color: _readinessColor(status),
+                          fontWeight: FontWeight.w800)),
                 ),
               ],
             ),
@@ -172,25 +191,32 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
             // Safety score bar
             Row(
               children: [
-                Text('Safety Score: ', style: Theme.of(context).textTheme.titleMedium),
+                Text('Safety Score: ',
+                    style: Theme.of(context).textTheme.titleMedium),
                 Text(
                   score.toStringAsFixed(0),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: _scoreColor(score),
-                    fontWeight: FontWeight.w900,
-                  ),
+                        color: _scoreColor(score),
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
                 const Spacer(),
                 if (allowed)
                   Chip(
-                    avatar: const Icon(Icons.check_circle, size: 16, color: AppColors.safeGreen),
-                    label: const Text('Trip Allowed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    avatar: const Icon(Icons.check_circle,
+                        size: 16, color: AppColors.safeGreen),
+                    label: const Text('Trip Allowed',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w700)),
                     backgroundColor: AppColors.safeGreen.withValues(alpha: 0.1),
                   )
                 else
                   Chip(
-                    avatar: const Icon(Icons.cancel, size: 16, color: AppColors.coral),
-                    label: const Text('Not Allowed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    avatar: const Icon(Icons.cancel,
+                        size: 16, color: AppColors.coral),
+                    label: const Text('Not Allowed',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w700)),
                     backgroundColor: AppColors.coral.withValues(alpha: 0.1),
                   ),
               ],
@@ -207,30 +233,40 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
             ),
             if (blocking.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text('Blocking Issues', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coral)),
+              Text('Blocking Issues',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800, color: AppColors.coral)),
               const SizedBox(height: 4),
               ...blocking.map((issue) => Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.cancel, size: 18, color: AppColors.coral),
+                        const Icon(Icons.cancel,
+                            size: 18, color: AppColors.coral),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(issue, style: const TextStyle(color: AppColors.coral))),
+                        Expanded(
+                            child: Text(issue,
+                                style:
+                                    const TextStyle(color: AppColors.coral))),
                       ],
                     ),
                   )),
             ],
             if (warnings.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text('Warnings', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.warningAmber)),
+              Text('Warnings',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.warningAmber)),
               const SizedBox(height: 4),
               ...warnings.map((w) => Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.warningAmber),
+                        const Icon(Icons.warning_amber_rounded,
+                            size: 18, color: AppColors.warningAmber),
                         const SizedBox(width: 8),
                         Expanded(child: Text(w)),
                       ],
@@ -257,11 +293,13 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
               children: [
                 const Icon(Icons.groups, color: AppColors.deepSea),
                 const SizedBox(width: 8),
-                Text('Crew (${activeCrew.length})', style: Theme.of(context).textTheme.titleLarge),
+                Text('Crew (${activeCrew.length})',
+                    style: Theme.of(context).textTheme.titleLarge),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatCrewScreen(boatId: widget.boatId)));
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => BoatCrewScreen(boatId: widget.boatId)));
                   },
                   icon: const Icon(Icons.edit, size: 18),
                   label: const Text('Manage'),
@@ -272,9 +310,11 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.star, color: AppColors.warningAmber, size: 20),
+                  const Icon(Icons.star,
+                      color: AppColors.warningAmber, size: 20),
                   const SizedBox(width: 8),
-                  Text('Captain: ${captain.first.fullName}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text('Captain: ${captain.first.fullName}',
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
                 ],
               ),
             ],
@@ -283,22 +323,30 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded, color: AppColors.coral, size: 18),
+                    const Icon(Icons.warning_amber_rounded,
+                        color: AppColors.coral, size: 18),
                     const SizedBox(width: 8),
-                    const Text('No captain assigned', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700)),
+                    const Text('No captain assigned',
+                        style: TextStyle(
+                            color: AppColors.coral,
+                            fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
-            ...activeCrew.where((c) => !c.isCaptain).take(3).map((member) => Padding(
-                  padding: const EdgeInsets.only(top: 6, left: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.person, size: 18, color: AppColors.textSecondary),
-                      const SizedBox(width: 8),
-                      Text('${member.fullName} — ${member.role}'),
-                    ],
-                  ),
-                )),
+            ...activeCrew
+                .where((c) => !c.isCaptain)
+                .take(3)
+                .map((member) => Padding(
+                      padding: const EdgeInsets.only(top: 6, left: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person,
+                              size: 18, color: AppColors.textSecondary),
+                          const SizedBox(width: 8),
+                          Text('${member.fullName} — ${member.role}'),
+                        ],
+                      ),
+                    )),
             if (activeCrew.length > 4)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -314,7 +362,12 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
   Widget _buildDocumentsCard() {
     final verified = _documents.where((d) => d.isVerified).length;
     final expired = _documents.where((d) => d.isExpired).length;
-    final expiring = _documents.where((d) => d.daysUntilExpiry != null && d.daysUntilExpiry! <= 30 && !d.isExpired).length;
+    final expiring = _documents
+        .where((d) =>
+            d.daysUntilExpiry != null &&
+            d.daysUntilExpiry! <= 30 &&
+            !d.isExpired)
+        .length;
 
     return Card(
       child: Padding(
@@ -326,11 +379,14 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
               children: [
                 const Icon(Icons.description, color: AppColors.deepSea),
                 const SizedBox(width: 8),
-                Text('Documents (${_documents.length})', style: Theme.of(context).textTheme.titleLarge),
+                Text('Documents (${_documents.length})',
+                    style: Theme.of(context).textTheme.titleLarge),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatDocumentsScreen(boatId: widget.boatId)));
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) =>
+                            BoatDocumentsScreen(boatId: widget.boatId)));
                   },
                   icon: const Icon(Icons.visibility, size: 18),
                   label: const Text('View'),
@@ -340,11 +396,22 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                _StatBox(label: 'Verified', value: '$verified/${_documents.length}', color: AppColors.safeGreen),
+                _StatBox(
+                    label: 'Verified',
+                    value: '$verified/${_documents.length}',
+                    color: AppColors.safeGreen),
                 const SizedBox(width: 12),
-                _StatBox(label: 'Expired', value: '$expired', color: expired > 0 ? AppColors.coral : AppColors.safeGreen),
+                _StatBox(
+                    label: 'Expired',
+                    value: '$expired',
+                    color: expired > 0 ? AppColors.coral : AppColors.safeGreen),
                 const SizedBox(width: 12),
-                _StatBox(label: 'Expiring Soon', value: '$expiring', color: expiring > 0 ? AppColors.warningAmber : AppColors.safeGreen),
+                _StatBox(
+                    label: 'Expiring Soon',
+                    value: '$expiring',
+                    color: expiring > 0
+                        ? AppColors.warningAmber
+                        : AppColors.safeGreen),
               ],
             ),
           ],
@@ -356,7 +423,8 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
   Widget _buildEquipmentCard() {
     final mandatoryItems = _equipment.where((e) => e.isMandatory).toList();
     final usable = mandatoryItems.where((e) => e.isUsable).length;
-    final needsReplace = mandatoryItems.where((e) => e.needsReplacement || e.isExpired).length;
+    final needsReplace =
+        mandatoryItems.where((e) => e.needsReplacement || e.isExpired).length;
 
     return Card(
       child: Padding(
@@ -368,22 +436,35 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
               children: [
                 const Icon(Icons.inventory_2, color: AppColors.deepSea),
                 const SizedBox(width: 8),
-                Text('Equipment (${_equipment.length})', style: Theme.of(context).textTheme.titleLarge),
+                Text('Equipment (${_equipment.length})',
+                    style: Theme.of(context).textTheme.titleLarge),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                _StatBox(label: 'Mandatory Items', value: '${mandatoryItems.length}', color: AppColors.primary),
+                _StatBox(
+                    label: 'Mandatory Items',
+                    value: '${mandatoryItems.length}',
+                    color: AppColors.primary),
                 const SizedBox(width: 12),
-                _StatBox(label: 'Usable', value: '$usable', color: AppColors.safeGreen),
+                _StatBox(
+                    label: 'Usable',
+                    value: '$usable',
+                    color: AppColors.safeGreen),
                 const SizedBox(width: 12),
-                _StatBox(label: 'Needs Repair', value: '$needsReplace', color: needsReplace > 0 ? AppColors.coral : AppColors.safeGreen),
+                _StatBox(
+                    label: 'Needs Repair',
+                    value: '$needsReplace',
+                    color: needsReplace > 0
+                        ? AppColors.coral
+                        : AppColors.safeGreen),
               ],
             ),
             if (_equipment.isNotEmpty) ...[
               const SizedBox(height: 12),
-              const Text('Items', style: TextStyle(fontWeight: FontWeight.w700)),
+              const Text('Items',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               ..._equipment.take(5).map((item) => Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -392,15 +473,20 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
                         Icon(
                           item.isUsable ? Icons.check_circle : Icons.cancel,
                           size: 16,
-                          color: item.isUsable ? AppColors.safeGreen : AppColors.coral,
+                          color: item.isUsable
+                              ? AppColors.safeGreen
+                              : AppColors.coral,
                         ),
                         const SizedBox(width: 8),
                         Text(item.itemName),
                         const Spacer(),
-                        Text(item.condition, style: TextStyle(
-                          color: item.isUsable ? AppColors.safeGreen : AppColors.coral,
-                          fontWeight: FontWeight.w700,
-                        )),
+                        Text(item.condition,
+                            style: TextStyle(
+                              color: item.isUsable
+                                  ? AppColors.safeGreen
+                                  : AppColors.coral,
+                              fontWeight: FontWeight.w700,
+                            )),
                       ],
                     ),
                   )),
@@ -434,28 +520,35 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('QR Code', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  const Text('QR Code',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text('Scan to identify this boat', style: TextStyle(color: AppColors.textSecondary)),
+                  Text('Scan to identify this boat',
+                      style: TextStyle(color: AppColors.textSecondary)),
                   const SizedBox(height: 8),
                   Semantics(
                     label: 'Copy QR code token',
                     button: true,
                     child: InkWell(
                       onTap: () {
-                        Clipboard.setData(ClipboardData(text: _boat!.qrCodeToken!));
+                        Clipboard.setData(
+                            ClipboardData(text: _boat!.qrCodeToken!));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('QR token copied to clipboard')),
+                          const SnackBar(
+                              content: Text('QR token copied to clipboard')),
                         );
                       },
                       child: Row(
                         children: [
-                          const Icon(Icons.copy, size: 16, color: AppColors.primary),
+                          const Icon(Icons.copy,
+                              size: 16, color: AppColors.primary),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               _boat!.qrCodeToken!,
-                              style: const TextStyle(color: AppColors.primary, fontSize: 12),
+                              style: const TextStyle(
+                                  color: AppColors.primary, fontSize: 12),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -537,8 +630,11 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-                Text(subtitle, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(subtitle,
+                    style: TextStyle(
+                        color: AppColors.textSecondary, fontSize: 13)),
               ],
             ),
           ),
@@ -548,15 +644,31 @@ class _BoatDetailScreenState extends State<BoatDetailScreen> {
   }
 
   String _formatDate(DateTime dt) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
   Color _readinessColor(String status) {
     switch (status) {
-      case 'SAFE': return AppColors.safeGreen;
-      case 'CAUTION': return AppColors.warningAmber;
-      default: return AppColors.coral;
+      case 'SAFE':
+        return AppColors.safeGreen;
+      case 'CAUTION':
+        return AppColors.warningAmber;
+      default:
+        return AppColors.coral;
     }
   }
 
@@ -589,9 +701,14 @@ class _BoatOverviewCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(boat.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                      Text(boat.name,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w900)),
                       if (boat.registrationNumber != null)
-                        Text(boat.registrationNumber!, style: Theme.of(context).textTheme.bodyMedium),
+                        Text(boat.registrationNumber!,
+                            style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                 ),
@@ -602,15 +719,31 @@ class _BoatOverviewCard extends StatelessWidget {
             // Key info grid
             Row(
               children: [
-                Expanded(child: _DetailTile(icon: Icons.verified, label: 'Verification', value: boat.verificationStatus)),
-                Expanded(child: _DetailTile(icon: Icons.calendar_today, label: 'Year Built', value: boat.yearBuilt?.toString() ?? '-')),
+                Expanded(
+                    child: _DetailTile(
+                        icon: Icons.verified,
+                        label: 'Verification',
+                        value: boat.verificationStatus)),
+                Expanded(
+                    child: _DetailTile(
+                        icon: Icons.calendar_today,
+                        label: 'Year Built',
+                        value: boat.yearBuilt?.toString() ?? '-')),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: _DetailTile(icon: Icons.build, label: 'Engine', value: boat.engineMake ?? boat.engineType ?? '-')),
-                Expanded(child: _DetailTile(icon: Icons.speed, label: 'HP', value: boat.engineHorsepower?.toString() ?? '-')),
+                Expanded(
+                    child: _DetailTile(
+                        icon: Icons.build,
+                        label: 'Engine',
+                        value: boat.engineMake ?? boat.engineType ?? '-')),
+                Expanded(
+                    child: _DetailTile(
+                        icon: Icons.speed,
+                        label: 'HP',
+                        value: boat.engineHorsepower?.toString() ?? '-')),
               ],
             ),
             if (boat.vesselClass != null || boat.hullMaterial != null) ...[
@@ -618,20 +751,39 @@ class _BoatOverviewCard extends StatelessWidget {
               Row(
                 children: [
                   if (boat.vesselClass != null)
-                    Expanded(child: _DetailTile(icon: Icons.category, label: 'Class', value: boat.vesselClass!)),
+                    Expanded(
+                        child: _DetailTile(
+                            icon: Icons.category,
+                            label: 'Class',
+                            value: boat.vesselClass!)),
                   if (boat.hullMaterial != null)
-                    Expanded(child: _DetailTile(icon: Icons.directions_boat, label: 'Hull', value: boat.hullMaterial!)),
+                    Expanded(
+                        child: _DetailTile(
+                            icon: Icons.directions_boat,
+                            label: 'Hull',
+                            value: boat.hullMaterial!)),
                 ],
               ),
             ],
-            if (boat.lengthMeters != null || boat.fuelCapacityLiters != null) ...[
+            if (boat.lengthMeters != null ||
+                boat.fuelCapacityLiters != null) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
                   if (boat.lengthMeters != null)
-                    Expanded(child: _DetailTile(icon: Icons.straighten, label: 'Length', value: '${boat.lengthMeters!.toStringAsFixed(1)}m')),
+                    Expanded(
+                        child: _DetailTile(
+                            icon: Icons.straighten,
+                            label: 'Length',
+                            value:
+                                '${boat.lengthMeters!.toStringAsFixed(1)}m')),
                   if (boat.fuelCapacityLiters != null)
-                    Expanded(child: _DetailTile(icon: Icons.local_gas_station, label: 'Fuel', value: '${boat.fuelCapacityLiters!.toStringAsFixed(0)}L')),
+                    Expanded(
+                        child: _DetailTile(
+                            icon: Icons.local_gas_station,
+                            label: 'Fuel',
+                            value:
+                                '${boat.fuelCapacityLiters!.toStringAsFixed(0)}L')),
                 ],
               ),
             ],
@@ -648,7 +800,8 @@ class _DetailTile extends StatelessWidget {
   final String label;
   final String value;
 
-  const _DetailTile({required this.icon, required this.label, required this.value});
+  const _DetailTile(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -661,8 +814,14 @@ class _DetailTile extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textDisabled, fontWeight: FontWeight.w600)),
-              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textDisabled,
+                      fontWeight: FontWeight.w600)),
+              Text(value,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
@@ -680,24 +839,53 @@ class _QuickActionGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = [
-      _QuickAction(icon: Icons.description, label: 'Documents', color: AppColors.primary, onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatDocumentsScreen(boatId: boat.id)));
-      }),
-      _QuickAction(icon: Icons.groups, label: 'Crew', color: AppColors.safeGreen, onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatCrewScreen(boatId: boat.id)));
-      }),
-      _QuickAction(icon: Icons.inventory_2, label: 'Equipment', color: AppColors.warningAmber, onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatEquipmentScreen(boatId: boat.id)));
-      }),
-      _QuickAction(icon: Icons.qr_code, label: 'QR Code', color: Colors.black87, onTap: () {
-        if (boat.qrCodeToken != null) {
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => BoatQRScreen(boatId: boat.id)));
-        }
-      }),
-      _QuickAction(icon: Icons.shield_outlined, label: 'Readiness', color: AppColors.coral, onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => TripReadinessScreen(boatId: boat.id)));
-      }),
-      _QuickAction(icon: Icons.edit, label: 'Edit', color: AppColors.deepSea, onTap: () {}),
+      _QuickAction(
+          icon: Icons.description,
+          label: 'Documents',
+          color: AppColors.primary,
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BoatDocumentsScreen(boatId: boat.id)));
+          }),
+      _QuickAction(
+          icon: Icons.groups,
+          label: 'Crew',
+          color: AppColors.safeGreen,
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BoatCrewScreen(boatId: boat.id)));
+          }),
+      _QuickAction(
+          icon: Icons.inventory_2,
+          label: 'Equipment',
+          color: AppColors.warningAmber,
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BoatEquipmentScreen(boatId: boat.id)));
+          }),
+      _QuickAction(
+          icon: Icons.qr_code,
+          label: 'QR Code',
+          color: Colors.black87,
+          onTap: () {
+            if (boat.qrCodeToken != null) {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => BoatQRScreen(boatId: boat.id)));
+            }
+          }),
+      _QuickAction(
+          icon: Icons.shield_outlined,
+          label: 'Readiness',
+          color: AppColors.coral,
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => TripReadinessScreen(boatId: boat.id)));
+          }),
+      _QuickAction(
+          icon: Icons.edit,
+          label: 'Edit',
+          color: AppColors.deepSea,
+          onTap: () {}),
     ];
 
     return Card(
@@ -708,7 +896,8 @@ class _QuickActionGrid extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.only(left: 4, bottom: 8),
-              child: Text('Quick Actions', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              child: Text('Quick Actions',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             ),
             GridView.builder(
               shrinkWrap: true,
@@ -734,15 +923,20 @@ class _QuickActionGrid extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: action.color.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: action.color.withValues(alpha: 0.15)),
+                          border: Border.all(
+                              color: action.color.withValues(alpha: 0.15)),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(action.icon, color: action.color, size: 28),
                             const SizedBox(height: 6),
-                            Text(action.label,
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: action.color),
+                            Text(
+                              action.label,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: action.color),
                               textAlign: TextAlign.center,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -769,7 +963,11 @@ class _QuickAction {
   final Color color;
   final VoidCallback onTap;
 
-  _QuickAction({required this.icon, required this.label, required this.color, required this.onTap});
+  _QuickAction(
+      {required this.icon,
+      required this.label,
+      required this.color,
+      required this.onTap});
 }
 
 /// Simple stat box for count display.
@@ -778,7 +976,8 @@ class _StatBox extends StatelessWidget {
   final String value;
   final Color color;
 
-  const _StatBox({required this.label, required this.value, required this.color});
+  const _StatBox(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -792,9 +991,15 @@ class _StatBox extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
+            Text(value,
+                style: TextStyle(
+                    fontSize: 22, fontWeight: FontWeight.w900, color: color)),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary)),
           ],
         ),
       ),
