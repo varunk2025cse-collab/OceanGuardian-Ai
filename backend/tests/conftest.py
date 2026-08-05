@@ -31,7 +31,9 @@ def setup_test_db():
 
     # Run seed script to populate reference/demo data
     try:
+        import importlib
         import seed as _seed  # noqa: F401 — seed.py executes on import
+        importlib.reload(_seed)
     except Exception:
         # If seeding fails, surface a helpful message but continue so tests can run.
         print("Warning: seed.py failed during test setup — some tests may rely on seeded data.")
@@ -62,7 +64,9 @@ def clean_tables(setup_test_db):
             conn.execute(table.delete())
     # Re-run seed to ensure demo/operator account exists after truncation
     try:
+        import importlib
         import seed as _seed  # noqa: F401
+        importlib.reload(_seed)
     except Exception:
         print("Warning: seed.py failed during clean_tables — tests may fail.")
     yield
