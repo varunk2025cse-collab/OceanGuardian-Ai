@@ -22,6 +22,7 @@ from app.models.notification_models import NotificationQueueItem, NotificationLi
 from app.services.provider_registry import ProviderRegistry
 from app.config import settings
 from app.services.notification_service import NotificationPriority
+from app.observability import record_notification_sent, record_notification_failed, record_notification_dead_letter
 
 
 logger = logging.getLogger(__name__)
@@ -71,14 +72,30 @@ class NotificationWorker:
         try:
             now = datetime.now(timezone.utc)
             # Order by explicit priority mapping to ensure CRITICAL -> LOW ordering
-            items = (
-                db.query(NotificationQueueItem)
-                .filter(NotificationQueueItem.status == "QUEUED")
-                .filter((NotificationQueueItem.next_retry_at == None) | (NotificationQueueItem.next_retry_at <= now))
-                .order_by(_priority_order_expr(NotificationQueueItem.priority))
-                .limit(self.batch_size)
-                .all()
-            )
+            # Use Postgres SKIP LOCKED when available to make multi-worker safe.
+            from app.database import engine
+
+            if getattr(engine, "dialect", None) and engine.dialect.name == "postgresql":
+                # Acquire row-level locks and skip locked rows so multiple workers can run concurrently.
+                items = (
+                    db.query(NotificationQueueItem)
+                    .filter(NotificationQueueItem.status == "QUEUED")
+                    .filter((NotificationQueueItem.next_retry_at == None) | (NotificationQueueItem.next_retry_at <= now))
+                    .order_by(_priority_order_expr(NotificationQueueItem.priority))
+                    .with_for_update(skip_locked=True)
+                    .limit(self.batch_size)
+                    .all()
+                )
+            else:
+                # Fallback generic SELECT -> UPDATE claim pattern (SQLite compatible)
+                items = (
+                    db.query(NotificationQueueItem)
+                    .filter(NotificationQueueItem.status == "QUEUED")
+                    .filter((NotificationQueueItem.next_retry_at == None) | (NotificationQueueItem.next_retry_at <= now))
+                    .order_by(_priority_order_expr(NotificationQueueItem.priority))
+                    .limit(self.batch_size)
+                    .all()
+                )
 
             for it in items:
                 # Attempt to atomically claim the item.
@@ -133,6 +150,10 @@ class NotificationWorker:
                         it.next_retry_at = None
                         it.locked_by = None
                         it.locked_at = None
+                        try:
+                            record_notification_sent(1)
+                        except Exception:
+                            logger.exception("Failed to increment sent metric")
                     else:
                         # failure: compute backoff
                         backoff = DEFAULT_BACKOFF_SECONDS * (2 ** (max(it.attempt_count - 1, 0)))
@@ -146,10 +167,18 @@ class NotificationWorker:
                             it.locked_by = None
                             it.locked_at = None
                             db.add(NotificationLifecycleEvent(notification_item_id=it.id, state="DEAD_LETTER", detail=res.detail, actor=WORKER_ID, correlation_id=it.correlation_id, created_at=now))
+                            try:
+                                record_notification_dead_letter(1)
+                            except Exception:
+                                logger.exception("Failed to increment dead_letter metric")
                         else:
                             it.status = "QUEUED"
                             it.locked_by = None
                             it.locked_at = None
+                            try:
+                                record_notification_failed(1)
+                            except Exception:
+                                logger.exception("Failed to increment failed metric")
 
                         it.last_error = res.detail
 
@@ -173,9 +202,17 @@ class NotificationWorker:
                         it.status = "DEAD_LETTER"
                         it.next_retry_at = None
                         db.add(NotificationLifecycleEvent(notification_item_id=it.id, state="DEAD_LETTER", detail=str(e), actor=WORKER_ID, correlation_id=it.correlation_id, created_at=now))
+                        try:
+                            record_notification_dead_letter(1)
+                        except Exception:
+                            logger.exception("Failed to increment dead_letter metric")
                     else:
                         it.status = "QUEUED"
                         db.add(NotificationLifecycleEvent(notification_item_id=it.id, state="FAILED", detail=str(e), actor=WORKER_ID, correlation_id=it.correlation_id, created_at=now))
+                        try:
+                            record_notification_failed(1)
+                        except Exception:
+                            logger.exception("Failed to increment failed metric")
 
                     it.updated_at = now
                     db.commit()

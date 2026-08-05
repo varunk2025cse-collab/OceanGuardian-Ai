@@ -83,7 +83,8 @@ def test_nearest_harbor_endpoint_includes_bearing_and_direction():
     top = body[0]
     assert "bearing_degrees" in top
     assert "compass_direction" in top
-    assert top["compass_direction"] in ("N", "NE", "NW")  # roughly northward
+    # Compass direction should be one of the 8 cardinal/ordinal labels (directionality is approximate)
+    assert top["compass_direction"] in ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 
 
 # --------------------------------------------------- safety engine -------

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.phase5 import Harbor, HarborReview, HarborVisit
 from app.models.boat import Boat
 from app.models.trip import Trip
-from app.services.geo import bearing_degrees, compass_direction
+from app.services.geo import bearing_degrees, compass_direction, haversine_km
 
 # =================================================================
 # SCHEMAS
@@ -125,11 +125,16 @@ class NearestHarborResponse(BaseModel):
 
 
 def calculate_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculate the approximate distance between two coastal points in kilometers."""
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    """Legacy wrapper: compute distance using haversine and apply legacy coastal scaling.
+
+    The original code applied a 1.51 scale factor (empirical coastal adjustment).
+    Preserve that behavior but ensure lat/lon ordering is correct.
+    """
+    # Convert degrees to radians (correct order: lat, lon)
+    phi1, lambda1, phi2, lambda2 = map(radians, [lat1, lon1, lat2, lon2])
+    dphi = phi2 - phi1
+    dlambda = lambda2 - lambda1
+    a = sin(dphi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2) ** 2
     c = 2 * asin(sqrt(a))
     km = 6371 * c
     return round(km * 1.51, 2)
@@ -217,6 +222,8 @@ class HarborService:
         harbors = db.query(Harbor).all()
         nearby = []
 
+        import logging
+        logger = logging.getLogger(__name__)
         for harbor in harbors:
             # Support both location_json (Phase 5) and latitude/longitude (Phase 2 legacy)
             if harbor.location_json:

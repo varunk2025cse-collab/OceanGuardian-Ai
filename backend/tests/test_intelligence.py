@@ -5,7 +5,13 @@ from app.services.intelligence.boat_intelligence import BoatIntelligenceService
 from app.services.intelligence.equipment_intelligence import EquipmentIntelligenceService
 
 def test_equipment_missing_mandatory(db):
-    boat = Boat(name="Test Boat", owner_id=1, status=BoatStatus.ACTIVE.value)
+    from app.models.user import User
+    # Create a minimal owner for referential integrity in tests
+    u = User(phone_number="9990000001", password_hash="x", full_name="Test User")
+    db.add(u)
+    db.commit()
+
+    boat = Boat(name="Test Boat", owner_id=u.id, status=BoatStatus.ACTIVE.value)
     db.add(boat)
     db.commit()
     
@@ -15,7 +21,12 @@ def test_equipment_missing_mandatory(db):
     assert "Missing mandatory safety equipment" in result.reason
 
 def test_equipment_good_condition(db):
-    boat = Boat(name="Test Boat", owner_id=1, status=BoatStatus.ACTIVE.value)
+    from app.models.user import User
+    u = User(phone_number="9990000002", password_hash="x", full_name="Test User 2")
+    db.add(u)
+    db.commit()
+
+    boat = Boat(name="Test Boat", owner_id=u.id, status=BoatStatus.ACTIVE.value)
     db.add(boat)
     db.commit()
     
@@ -35,7 +46,12 @@ def test_equipment_good_condition(db):
     assert result.risk_level == "green"
     
 def test_boat_overall_health(db):
-    boat = Boat(name="Test Boat", owner_id=1, status=BoatStatus.ACTIVE.value)
+    from app.models.user import User
+    u = User(phone_number="9990000003", password_hash="x", full_name="Test User 3")
+    db.add(u)
+    db.commit()
+
+    boat = Boat(name="Test Boat", owner_id=u.id, status=BoatStatus.ACTIVE.value)
     db.add(boat)
     db.commit()
     

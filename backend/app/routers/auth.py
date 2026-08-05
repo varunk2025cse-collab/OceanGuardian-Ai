@@ -123,9 +123,6 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     # Issue a fresh token pair
     return _issue_tokens(user)
 
-    # Issue a fresh token pair
-    return _issue_tokens(user)
-
 
 @router.post("/forgot", status_code=status.HTTP_202_ACCEPTED)
 def forgot_password(payload: PasswordResetRequest, db: Session = Depends(get_db)):

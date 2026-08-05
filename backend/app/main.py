@@ -20,12 +20,13 @@ Includes Phase 5 Intelligence Layer:
   - Family Safety Portal (v2)
   - Analytics Engine (v2)
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import Base, engine, SessionLocal, ensure_compatible_schema
-from app.logging_config import logger
+from app.logging_config import logger, set_correlation_id, set_trace_id
+from app import observability
 
 # ── Import every model module so they register on Base.metadata ──────────────
 # This ensures create_all() below and Alembic autogenerate both see the full schema.
@@ -86,6 +87,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize observability (tracing is best-effort and optional)
+observability.init_tracing(settings.app_name)
+
+# Request middleware to set correlation and trace ids for structured logs and tracing
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    from uuid import uuid4
+    try:
+        req_id = (
+            request.headers.get("x-request-id")
+            or request.headers.get("x-correlation-id")
+            or str(uuid4())
+        )
+        set_correlation_id(req_id)
+        # set a trace id if provided otherwise generate one; tracing systems may override
+        set_trace_id(request.headers.get("x-trace-id") or str(uuid4()))
+        response = await call_next(request)
+    finally:
+        # clear correlation id to avoid bleed across async contexts
+        set_correlation_id(None)
+    # Echo the request id for clients
+    try:
+        response.headers["X-Request-ID"] = req_id
+    except Exception:
+        pass
+    return response
+
 # Fisherman-facing (Flutter)
 app.include_router(auth.router)
 app.include_router(loc_router.router)
@@ -102,9 +130,15 @@ app.include_router(risk.router)
 # Operator-facing (React Rescue Dashboard)
 app.include_router(admin.router)
 app.include_router(admin_users.router)
+# Admin notification endpoints
+from app.routers import admin_notifications  # noqa: E402
+app.include_router(admin_notifications.router)
 
 # Phase 5 Intelligence Layer v2 APIs
 app.include_router(harbor_v2.router)
+# Metrics endpoint (Prometheus)
+from app.routers import metrics as metrics_router  # noqa: E402
+app.include_router(metrics_router.router)
 app.include_router(boat_health_v2.router)
 app.include_router(family_portal_v2.router)
 app.include_router(analytics_v2.router)
