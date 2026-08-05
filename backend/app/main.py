@@ -100,6 +100,7 @@ app.include_router(risk.router)
 
 # Operator-facing (React Rescue Dashboard)
 app.include_router(admin.router)
+app.include_router(__import__("app.routers.admin_users", fromlist=["router"]).router)
 
 # Phase 5 Intelligence Layer v2 APIs
 app.include_router(harbor_v2.router)
