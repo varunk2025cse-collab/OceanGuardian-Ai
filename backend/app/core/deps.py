@@ -9,6 +9,7 @@ Three authenticated identities:
 The fisherman guard exists to prevent an operator account accidentally
 tagging GPS pings or triggering SOS on behalf of a fisherman.
 """
+from datetime import datetime, timezone
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -49,9 +50,12 @@ def get_current_user(
     try:
         token_iat = float(payload.get("iat", 0))
     except (TypeError, ValueError):
-        token_iat = 0
+        token_iat = 0.0
     if user.password_changed_at is not None and token_iat:
-        if token_iat < float(user.password_changed_at.timestamp()):
+        password_changed_at = user.password_changed_at
+        if password_changed_at.tzinfo is None:
+            password_changed_at = password_changed_at.replace(tzinfo=timezone.utc)
+        if datetime.fromtimestamp(token_iat, timezone.utc) < password_changed_at:
             raise credentials_error
 
     return user

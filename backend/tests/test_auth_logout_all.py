@@ -30,3 +30,7 @@ def test_logout_all_blocks_refresh():
     # Accessing a protected endpoint with the access token should also fail after logout_all
     r4 = client.get("/api/v1/auth/me", headers=headers)
     assert r4.status_code == 401
+
+
+
+

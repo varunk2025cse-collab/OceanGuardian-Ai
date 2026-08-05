@@ -14,7 +14,17 @@ from fastapi.security import OAuth2PasswordBearer
 from app.core.deps import get_current_user, oauth2_scheme
 from app.core.rate_limit import rate_limit
 from app.models.user import User, UserRole, TokenBlocklist, PasswordResetToken
-from app.schemas.user import UserRegister, UserLogin, UserOut, TokenPair, RefreshRequest, PasswordResetRequest, PasswordResetConfirm
+from app.schemas.user import (
+    UserRegister,
+    UserLogin,
+    UserOut,
+    TokenPair,
+    RefreshRequest,
+    PasswordResetRequest,
+    PasswordResetConfirm,
+    UserUpdate,
+    PasswordChangeRequest,
+)
 import hashlib
 from datetime import datetime, timezone, timedelta
 import uuid
@@ -93,10 +103,25 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
+    # Invalidate refresh tokens issued before the user's last password change.
+    try:
+        token_iat = float(data.get("iat", 0))
+    except (TypeError, ValueError):
+        token_iat = 0.0
+    if user.password_changed_at is not None and token_iat:
+        password_changed_at = user.password_changed_at
+        if password_changed_at.tzinfo is None:
+            password_changed_at = password_changed_at.replace(tzinfo=timezone.utc)
+        if datetime.fromtimestamp(token_iat, timezone.utc) < password_changed_at:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
     # Token rotation: mark the presented refresh token as used so it cannot be replayed.
     blocklist = TokenBlocklist(jti=jti)
     db.add(blocklist)
     db.commit()
+
+    # Issue a fresh token pair
+    return _issue_tokens(user)
 
     # Issue a fresh token pair
     return _issue_tokens(user)
@@ -134,7 +159,13 @@ def reset_password(payload: PasswordResetConfirm, db: Session = Depends(get_db))
         .filter(PasswordResetToken.token_hash == token_hash, PasswordResetToken.used == False)
         .first()
     )
-    if not prt or prt.expires_at < now:
+    if prt is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+
+    expires_at = prt.expires_at
+    if expires_at is not None and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at is None or expires_at < now:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
 
     user = db.query(User).filter(User.id == prt.user_id).first()
@@ -188,6 +219,40 @@ def logout_all(
         if refresh_payload and refresh_payload.get("type") == "refresh" and "jti" in refresh_payload:
             db.add(TokenBlocklist(jti=refresh_payload["jti"]))
 
+    db.commit()
+
+
+@router.patch("/me", response_model=UserOut)
+def update_profile(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    updated_fields = payload.model_dump(exclude_unset=True)
+    if updated_fields:
+        for key, value in updated_fields.items():
+            setattr(current_user, key, value)
+        db.add(current_user)
+        db.commit()
+        db.refresh(current_user)
+    return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    payload: PasswordChangeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password")
+    if payload.current_password == payload.new_password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must differ from the current password")
+
+    now = datetime.now(timezone.utc)
+    current_user.password_hash = hash_password(payload.new_password)
+    current_user.password_changed_at = now
+    db.add(current_user)
     db.commit()
 
 

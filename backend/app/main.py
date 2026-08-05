@@ -47,6 +47,7 @@ logger.info("Database tables initialized")
 from app.routers import auth, location as loc_router, sos as sos_router   # noqa: E402
 from app.routers import weather, market, schemes, family                   # noqa: E402
 from app.routers import boats, trips, harbors, risk, admin                 # noqa: E402
+from app.routers import admin_users                                         # noqa: E402
 
 # Phase 5 v2 API routes
 from app.routers.v2 import harbor as harbor_v2                             # noqa: E402
@@ -100,7 +101,7 @@ app.include_router(risk.router)
 
 # Operator-facing (React Rescue Dashboard)
 app.include_router(admin.router)
-app.include_router(__import__("app.routers.admin_users", fromlist=["router"]).router)
+app.include_router(admin_users.router)
 
 # Phase 5 Intelligence Layer v2 APIs
 app.include_router(harbor_v2.router)
