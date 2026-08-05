@@ -22,7 +22,8 @@ import 'local_db_service.dart';
 /// Sync action queued for background processing.
 class BoatSyncAction {
   final String id;
-  final String action; // 'create_boat', 'update_boat', 'status_change', 'create_doc', 'delete_doc', 'assign_crew', 'remove_crew'
+  final String
+      action; // 'create_boat', 'update_boat', 'status_change', 'create_doc', 'delete_doc', 'assign_crew', 'remove_crew', 'create_equipment'
   final Map<String, dynamic> payload;
   final DateTime createdAt;
 
@@ -209,8 +210,7 @@ class BoatRepository {
     await _ensureBoatTables();
     final db = await _db;
     final rows = await db.query('boat_documents',
-        where: 'boat_id = ?', whereArgs: [boatId],
-        orderBy: 'created_at DESC');
+        where: 'boat_id = ?', whereArgs: [boatId], orderBy: 'created_at DESC');
     return rows.map((r) => BoatDocument.fromDbMap(r)).toList();
   }
 
@@ -342,15 +342,21 @@ class BoatRepository {
   Future<void> markSyncFailed(String id) async {
     final db = await _db;
     final rows = await db.query('boat_sync_outbox',
-        columns: ['retry_count'],
-        where: 'id = ?', whereArgs: [id]);
-    final retryCount = rows.isEmpty ? 0 : ((rows.first['retry_count'] as int?) ?? 0) + 1;
+        columns: ['retry_count'], where: 'id = ?', whereArgs: [id]);
+    final retryCount =
+        rows.isEmpty ? 0 : ((rows.first['retry_count'] as int?) ?? 0) + 1;
     final backoffSeconds = _backoffForRetry(retryCount);
-    final nextRetryAt = DateTime.now().add(Duration(seconds: backoffSeconds)).toIso8601String();
+    final nextRetryAt =
+        DateTime.now().add(Duration(seconds: backoffSeconds)).toIso8601String();
     await db.update(
       'boat_sync_outbox',
-      {'sync_status': 'failed', 'retry_count': retryCount, 'next_retry_at': nextRetryAt},
-      where: 'id = ?', whereArgs: [id],
+      {
+        'sync_status': 'failed',
+        'retry_count': retryCount,
+        'next_retry_at': nextRetryAt
+      },
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 
@@ -411,8 +417,12 @@ class BoatRepository {
   /// Fetch equipment from API and cache locally.
   Future<List<BoatEquipmentItem>> fetchAndCacheEquipment(int boatId) async {
     try {
-      await ApiClient.instance.getV2('/boats/$boatId/crew?limit=100');
-      return [];
+      final data = await ApiClient.instance.getV2('/boats/$boatId/equipment');
+      final items = (data as List)
+          .map((j) => BoatEquipmentItem.fromJson(j as Map<String, dynamic>))
+          .toList();
+      await upsertEquipment(items);
+      return items;
     } catch (_) {
       return getEquipment(boatId);
     }
@@ -442,11 +452,13 @@ class BoatRepository {
         break;
       case 'status_change':
         final boatId = action.payload['boat_id'];
-        await ApiClient.instance.postV2('/boats/$boatId/status', action.payload);
+        await ApiClient.instance
+            .postV2('/boats/$boatId/status', action.payload);
         break;
       case 'create_doc':
         final boatId = action.payload['boat_id'];
-        await ApiClient.instance.postV2('/boats/$boatId/documents', action.payload);
+        await ApiClient.instance
+            .postV2('/boats/$boatId/documents', action.payload);
         break;
       case 'delete_doc':
         final boatId = action.payload['boat_id'];
@@ -461,6 +473,11 @@ class BoatRepository {
         final boatId = action.payload['boat_id'];
         final crewId = action.payload['crew_id'];
         await ApiClient.instance.deleteV2('/boats/$boatId/crew/$crewId');
+        break;
+      case 'create_equipment':
+        final boatId = action.payload['boat_id'];
+        await ApiClient.instance
+            .postV2('/boats/$boatId/equipment', action.payload);
         break;
     }
   }

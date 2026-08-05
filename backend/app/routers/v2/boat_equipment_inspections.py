@@ -37,6 +37,7 @@ from app.schemas.boat import (
     InspectionCreate,
     InspectionOut,
 )
+from app.services.boat_service import BoatService
 
 router = APIRouter(prefix="/api/v2/boats", tags=["boat-equipment-inspections"])
 
@@ -45,12 +46,7 @@ router = APIRouter(prefix="/api/v2/boats", tags=["boat-equipment-inspections"])
 
 def _get_boat_for_user(db: Session, boat_id: int, user: User) -> Boat:
     """Load a boat and enforce ownership / operator access."""
-    boat = db.query(Boat).filter(Boat.id == boat_id, Boat.deleted_at.is_(None)).first()
-    if not boat:
-        raise HTTPException(status_code=404, detail="Boat not found")
-    if user.role == "fisherman" and boat.owner_id != user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
-    return boat
+    return BoatService.get_boat_for_user(db, boat_id, user)
 
 
 # =============================================================================
