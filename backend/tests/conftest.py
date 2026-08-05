@@ -20,8 +20,9 @@ def setup_test_db():
     """Create tables once for the whole test session, seed demo data, drop at the end."""
     from app.database import Base, engine
     from app.main import app  # registers all models via router imports  # noqa: F401
-    # Ensure demo seed runs so tests that expect an operator account pass.
-    os.environ.setdefault("SEED_DEMO_DATA", "true")
+    # Ensure seed runs for reference/demo data but avoid creating a demo
+    # operator account that can cause duplicate-creation races in tests.
+    os.environ.setdefault("SEED_DEMO_DATA", "false")
     # Create schema while temporarily disabling foreign key checks to avoid
     # SQLite drop/create ordering problems during repeated test runs.
     with engine.begin() as conn:
