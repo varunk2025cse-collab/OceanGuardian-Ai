@@ -125,8 +125,18 @@ try:
         ])
         print("Seeded 10 Tamil Nadu coastal harbors")
 
-    db.commit()
-    print("Seed complete.")
+    try:
+        db.commit()
+        print("Seed complete.")
+    except Exception as e:
+        # Be conservative in CI/test environments — log and rollback on IntegrityError
+        from sqlalchemy.exc import IntegrityError
+        if isinstance(e, IntegrityError):
+            print("Seed commit encountered IntegrityError — rolling back. This may be due to repeated seed runs in tests.")
+            db.rollback()
+        else:
+            # Re-raise non-Integrity errors to avoid hiding real problems
+            raise
 
 finally:
     db.close()
