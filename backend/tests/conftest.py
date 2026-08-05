@@ -48,7 +48,7 @@ def setup_test_db():
         os.remove("test_all.db")
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def clean_tables(setup_test_db):
     """Ensure a clean database state once per session by deleting rows from all tables.
 
