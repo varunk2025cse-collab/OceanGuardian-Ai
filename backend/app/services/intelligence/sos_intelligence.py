@@ -112,10 +112,37 @@ class SOSIntelligenceService:
     @staticmethod
     def evaluate(db: Session, alert: SOSAlert) -> SOSReport:
         """Full SOS intelligence report."""
+        alert_type = (alert.alert_type or "unknown").lower()
+        (
+            _,
+            _en_severity_reason,
+            _en_resource_rec,
+            ta_severity_reason,
+            ta_resource_rec,
+            ta_fisherman_msg,
+        ) = _SOS_TYPE_MAP.get(
+            alert_type,
+            (
+                "red",
+                f"SOS alert type: {alert.alert_type or 'Unknown'}.",
+                "Dispatch standard search and rescue (SAR) vessel.",
+                f"SOS எச்சரிக்கை வகை: {alert.alert_type or 'Unknown'}.",
+                "மீட்பு கப்பல் அனுப்பவும்.",
+                "உதவி வருகிறது. அமைதியாக இருங்கள்.",
+            ),
+        )
+
         severity = SOSIntelligenceService._assess_severity(alert)
         resources = SOSIntelligenceService._recommend_resources(alert)
         priority = SOSIntelligenceService._assess_priority(alert)
         rescue_minutes = SOSIntelligenceService._estimate_rescue_minutes(db, alert)
+
+        priority_label_ta = _PRIORITY_TA.get(
+            alert.priority or priority.priority or "normal",
+            "சாதாரண",
+        )
+        status_ta = _STATUS_TA.get(alert.status.value, "நிலையைப் பெற முடியவில்லை")
+        severity_reason_ta = SOSIntelligenceService._build_tamil_severity_reason(alert, ta_severity_reason)
 
         return SOSReport(
             alert_id=alert.id,
@@ -123,6 +150,20 @@ class SOSIntelligenceService:
             resource_recommendation=resources,
             response_priority=priority,
             estimated_rescue_minutes=rescue_minutes,
+            severity_reason_ta=severity_reason_ta,
+            resource_recommendation_ta=ta_resource_rec,
+            fisherman_message_ta=ta_fisherman_msg,
+            priority_label_ta=priority_label_ta,
+            rescue_time_ta=SOSIntelligenceService._format_rescue_time_ta(rescue_minutes),
+            status_ta=status_ta,
+        )
+
+    @staticmethod
+    def _format_rescue_time_ta(rescue_minutes: Optional[int]) -> str:
+        return (
+            f"{rescue_minutes} நிமிடங்களில் உதவி வரும்"
+            if rescue_minutes is not None
+            else "தூரம் தெரியவில்லை"
         )
 
     @staticmethod
@@ -146,7 +187,17 @@ class SOSIntelligenceService:
     def _assess_severity(alert: SOSAlert) -> DecisionSupport:
         """Assess severity based on alert type and conditions."""
         alert_type = (alert.alert_type or "unknown").lower()
-        risk_level, _ = _SOS_TYPE_MAP.get(alert_type, ("red", ""))
+        risk_level, _en_severity, _en_resource, _ta_severity, _ta_resource, _ta_message = _SOS_TYPE_MAP.get(
+            alert_type,
+            (
+                "red",
+                "Unknown SOS alert.",
+                "Dispatch standard search and rescue (SAR) vessel.",
+                "SOS எச்சரிக்கை வகை தெரியவில்லை.",
+                "மீட்பு கப்பல் அனுப்பவும்.",
+                "உதவி வருகிறது. அமைதியாக இருங்கள்.",
+            ),
+        )
 
         evidence = [
             DecisionEvidence(
@@ -181,10 +232,14 @@ class SOSIntelligenceService:
         else:
             rules.append(f"SOS alert type: {alert.alert_type or 'Unknown'}.")
 
+        tamil_warnings = []
         if alert.battery_level_percent and alert.battery_level_percent < 20:
             rules.append(
                 f"Battery critically low ({alert.battery_level_percent}%) — "
                 "communication may be lost soon. Act before contact is lost."
+            )
+            tamil_warnings.append(
+                f"Battery {alert.battery_level_percent}% — தொடர்பு விரைவில் துண்டிக்கப்படலாம்."
             )
 
         if alert.accuracy_meters and alert.accuracy_meters > 200:
@@ -192,10 +247,13 @@ class SOSIntelligenceService:
                 f"GPS accuracy is poor (±{alert.accuracy_meters:.0f}m) — "
                 "search area is larger than usual."
             )
+            tamil_warnings.append(
+                f"GPS துல்லியம் குறைவு (±{alert.accuracy_meters:.0f}m) — தேடல் பரப்பு அதிகம்."
+            )
 
         return DecisionSupport(
             recommendation="Dispatch rescue resources immediately.",
-            reason="; ".join(rules),
+            reason="; ".join(rules + tamil_warnings),
             evidence=evidence,
             confidence_score=0.95,
             priority="critical" if risk_level == "critical" else "high",
@@ -204,10 +262,33 @@ class SOSIntelligenceService:
         )
 
     @staticmethod
+    def _build_tamil_severity_reason(alert: SOSAlert, base_reason: str) -> str:
+        parts = [base_reason]
+        if alert.battery_level_percent and alert.battery_level_percent < 20:
+            parts.append(
+                f"Battery {alert.battery_level_percent}% — தொடர்பு விரைவில் துண்டிக்கப்படலாம்."
+            )
+        if alert.accuracy_meters and alert.accuracy_meters > 200:
+            parts.append(
+                f"GPS துல்லியம் குறைவு (±{alert.accuracy_meters:.0f}m) — தேடல் பரப்பு அதிகம்."
+            )
+        return " ".join(parts)
+
+    @staticmethod
     def _recommend_resources(alert: SOSAlert) -> DecisionSupport:
         """Recommend rescue resources based on alert type."""
         alert_type = (alert.alert_type or "unknown").lower()
-        _, rec = _SOS_TYPE_MAP.get(alert_type, ("red", "Dispatch standard search and rescue (SAR) vessel."))
+        _, _, rec, _, _, _ = _SOS_TYPE_MAP.get(
+            alert_type,
+            (
+                "red",
+                "",
+                "Dispatch standard search and rescue (SAR) vessel.",
+                "",
+                "",
+                "",
+            ),
+        )
 
         evidence = [
             DecisionEvidence(

@@ -15,20 +15,6 @@ class TripService {
 
   final ValueNotifier<Trip?> activeTrip = ValueNotifier(null);
 
-  static Map<String, dynamic> buildStartTripPayload({
-    String? destination,
-    DateTime? estimatedReturnAt,
-    String? notes,
-    int? boatId,
-  }) {
-    return {
-      if (destination != null && destination.isNotEmpty) 'destination': destination,
-      if (estimatedReturnAt != null) 'estimated_return_at': estimatedReturnAt.toUtc().toIso8601String(),
-      if (notes != null && notes.isNotEmpty) 'notes': notes,
-      if (boatId != null) 'boat_id': boatId,
-    };
-  }
-
   Future<void> refreshActiveTrip() async {
     try {
       final json = await ApiClient.instance.get('/trips/active');
@@ -42,12 +28,12 @@ class TripService {
   }
 
   Future<Trip> startTrip({String? destination, DateTime? estimatedReturnAt, String? notes, int? boatId}) async {
-    final json = await ApiClient.instance.post('/trips/start', buildStartTripPayload(
-      destination: destination,
-      estimatedReturnAt: estimatedReturnAt,
-      notes: notes,
-      boatId: boatId,
-    ));
+    final json = await ApiClient.instance.post('/trips/start', {
+      if (destination != null && destination.isNotEmpty) 'destination': destination,
+      if (estimatedReturnAt != null) 'estimated_return_at': estimatedReturnAt.toUtc().toIso8601String(),
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+      if (boatId != null) 'boat_id': boatId,
+    });
     final trip = Trip.fromJson(json as Map<String, dynamic>);
     activeTrip.value = trip;
     LocationService.instance.currentTripId = trip.id;

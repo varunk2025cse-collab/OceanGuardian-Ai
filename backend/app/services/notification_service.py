@@ -14,7 +14,7 @@ configured via environment variables — see app.config.settings.
 """
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 
 from sqlalchemy.orm import Session
@@ -155,6 +155,7 @@ class NotificationEngine:
                 related_event_id=related_event_id,
                 sent_at=datetime.now(timezone.utc) if result.status in ("sent", "simulated") else None,
                 delivery_status=result.status,
+                retry_count=0,
             )
             db.add(row)
             created.append(row)
@@ -162,6 +163,52 @@ class NotificationEngine:
         for row in created:
             db.refresh(row)
         return created
+
+    @staticmethod
+    def retry_failed_notifications(db: Session) -> int:
+        """Retry recently failed family notifications up to 3 times."""
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(hours=24)
+        failed_notifications = (
+            db.query(FamilyNotification)
+            .filter(
+                FamilyNotification.delivery_status == "failed",
+                FamilyNotification.retry_count < 3,
+                FamilyNotification.created_at >= cutoff,
+            )
+            .all()
+        )
+
+        provider = NotificationEngine._select_provider()
+        success_count = 0
+
+        for notification in failed_notifications:
+            try:
+                result = provider.send(
+                    to_user_id=notification.family_member_id,
+                    message=notification.message,
+                    priority=NotificationPriority.high,
+                )
+                notification.retry_count = (notification.retry_count or 0) + 1
+                notification.last_retry_at = now
+
+                if result.status in ("sent", "simulated"):
+                    notification.delivery_status = "delivered"
+                    notification.sent_at = now
+                    success_count += 1
+                else:
+                    notification.delivery_status = "failed"
+
+                db.add(notification)
+                db.commit()
+            except Exception:
+                logger.exception("Failed retrying FamilyNotification id=%s", notification.id)
+                notification.retry_count = (notification.retry_count or 0) + 1
+                notification.last_retry_at = now
+                db.add(notification)
+                db.commit()
+
+        return success_count
 
     @staticmethod
     def publish_family_event(

@@ -21,7 +21,7 @@ from app.database import SessionLocal
 from app.models.notification_models import NotificationQueueItem, NotificationLifecycleEvent
 from app.services.provider_registry import ProviderRegistry
 from app.config import settings
-from app.services.notification_service import NotificationPriority
+from app.services.notification_service import NotificationEngine, NotificationPriority
 from app.observability import record_notification_sent, record_notification_failed, record_notification_dead_letter
 
 
@@ -66,6 +66,18 @@ class NotificationWorker:
         self.batch_size = batch_size
         self.poll_interval = poll_interval
         self.running = False
+        self.last_retry_scan = datetime.min.replace(tzinfo=timezone.utc)
+
+    def _run_failed_notification_retry_pass(self):
+        db: Session = SessionLocal()
+        try:
+            count = NotificationEngine.retry_failed_notifications(db)
+            if count:
+                logger.info("Retried %d failed family notification(s)", count)
+        except Exception:
+            logger.exception("Error running failed notification retry pass")
+        finally:
+            db.close()
 
     def run_one_batch(self):
         db: Session = SessionLocal()
@@ -221,8 +233,13 @@ class NotificationWorker:
 
     def run(self):
         self.running = True
+        retry_interval = timedelta(minutes=5)
         while self.running:
             try:
+                now = datetime.now(timezone.utc)
+                if now - self.last_retry_scan >= retry_interval:
+                    self._run_failed_notification_retry_pass()
+                    self.last_retry_scan = now
                 self.run_one_batch()
             except Exception:
                 # ensure worker doesn't crash; log and continue

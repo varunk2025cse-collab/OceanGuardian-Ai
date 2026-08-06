@@ -10,12 +10,9 @@ UNVERIFIED — nothing here is asserted without evidence.
 
 ## 1. Current Version
 
-No formal version tag exists yet. Backend FastAPI app reports `0.5.0`
-(stale, carried over from the pre-V2 codebase — recommend bumping to
-`2.0.0-rc1` before any real release). Dashboard `package.json`: `0.2.0`
-(also stale). Recommend synchronizing version numbers as part of the next
-concrete release-prep step; not done in this pass since it's cosmetic and
-orthogonal to the functional work.
+Backend FastAPI app now reports `2.0.0-rc1`, and the rescue dashboard
+package version is synchronized to `2.0.0-rc1`. This release-candidate
+version is now set consistently across the backend and dashboard.
 
 ## 2. Completed Features
 

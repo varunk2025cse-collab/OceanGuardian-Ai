@@ -549,7 +549,9 @@ class FamilyNotification(Base):
     related_event_id = Column(Integer)
     sent_at = Column(DateTime)
     read_at = Column(DateTime)
-    delivery_status = Column(String(20))  # "pending", "sent", "failed"
+    delivery_status = Column(String(20))  # "pending", "sent", "failed", "delivered"
+    retry_count = Column(Integer, nullable=False, default=0, server_default="0")
+    last_retry_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

@@ -73,6 +73,8 @@ class Settings(BaseSettings):
     notification_max_attempts: int = 10
     notification_queue_poll_interval_seconds: int = 5
 
+    rate_limit_backend: str = "memory"  # "memory" | "redis"
+    redis_url: str | None = None
     rate_limit_per_minute: int = 30
 
     # Set by scripts/demo_mode.{sh,ps1} — never set this in a real

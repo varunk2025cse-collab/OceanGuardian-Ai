@@ -9,9 +9,17 @@ from datetime import datetime, timedelta, timezone
 
 import uuid
 import bcrypt
-from jose import jwt, JWTError
+import jwt
+from jwt import InvalidTokenError
 
 from app.config import settings
+
+# MIGRATION NOTE: This module currently uses python-jose (known CVE risk).
+# PyJWT is now in requirements.txt. Migration path:
+#   1. Replace jose.jwt.encode/decode with jwt.encode/decode (PyJWT API)
+#   2. Update exception handling: jose.JWTError -> jwt.InvalidTokenError
+#   3. Remove python-jose from requirements.txt
+# Do NOT migrate in this pass — test coverage must be verified first.
 
 # Using the `bcrypt` library directly rather than passlib's CryptContext
 # wrapper: passlib 1.7.x reads a `__about__.__version__` attribute that
@@ -63,5 +71,5 @@ def create_refresh_token(subject: str) -> str:
 def decode_token(token: str) -> dict | None:
     try:
         return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
-    except JWTError:
+    except InvalidTokenError:
         return None

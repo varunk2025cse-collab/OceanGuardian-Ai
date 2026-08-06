@@ -27,8 +27,18 @@ principle. See `backend/app/core/rate_limit.py` docstring.
 
 - **Rate limiter is single-process, in-memory.** A multi-worker or
   multi-instance deployment would enforce the limit independently per
-  process, not cluster-wide. Would need a shared store (Redis) to fix
-  properly — not added as a new dependency for one feature in this pass.
+  process, not cluster-wide. Cluster-safe rate limiting is available via
+  `RATE_LIMIT_BACKEND=redis` and `REDIS_URL` once the optional `redis`
+  package is installed. The code now allows this configuration and
+  falls back safely to in-memory mode when Redis is unavailable.
+- **`python-jose`** (JWT library) is still in use — a lower-maintenance-
+  velocity dependency than alternatives like `PyJWT`. `PyJWT>=2.8.0` is
+  now added to `requirements.txt` as the supported migration target. The
+  migration path is documented in `backend/app/core/security.py`.
+- **Dependency vulnerability scanning is now surfaced in CI.** The
+  backend CI job installs `pip-audit` and runs it against
+  `requirements.txt`, continuing on error so the existing `python-jose`
+  advisory is visible without blocking the build.
 - **CORS still defaults to `*`** in `.env.example` for local-dev
   convenience. Explicitly documented as unsafe for any shared/staging/
   production deployment; `docker-compose.yml` already overrides it to an

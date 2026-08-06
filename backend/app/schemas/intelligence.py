@@ -103,3 +103,11 @@ class SOSReport(BaseModel):
     resource_recommendation: DecisionSupport
     response_priority: DecisionSupport
     estimated_rescue_minutes: Optional[int] = None
+
+    # Tamil-language fields — populated for all responses, not just Tamil requests
+    severity_reason_ta: Optional[str] = None
+    resource_recommendation_ta: Optional[str] = None
+    fisherman_message_ta: Optional[str] = None
+    priority_label_ta: Optional[str] = None
+    rescue_time_ta: Optional[str] = None
+    status_ta: Optional[str] = None

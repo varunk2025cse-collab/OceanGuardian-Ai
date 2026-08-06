@@ -3,7 +3,14 @@ import api from './client'
 // /api/v2/analytics/* — see backend/app/routers/v2/analytics.py. Same
 // baseURL-override pattern as api/tracking.js (the shared `api` instance
 // is pinned to /api/v1).
-const v2 = (path, params) => api.get(path, { baseURL: '/api/v2', params }).then((r) => r.data)
+const v2 = async (path, params) => {
+  try {
+    const response = await api.get(path, { baseURL: '/api/v2', params })
+    return response.data
+  } catch (err) {
+    return null
+  }
+}
 
 export const getOverview = () => v2('/analytics/overview')
 export const getSosTrends = (days = 7) => v2('/analytics/sos-trends', { days })

@@ -21,7 +21,6 @@ import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/boat_status_badge.dart';
 import 'boat_detail_screen.dart';
-import 'boat_registration_screen.dart';
 import 'start_trip_screen.dart';
 
 class BoatListScreen extends StatefulWidget {
@@ -95,6 +94,7 @@ class _BoatListScreenState extends State<BoatListScreen> {
     setState(() => _applyFilters());
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,9 +124,7 @@ class _BoatListScreenState extends State<BoatListScreen> {
             icon: const Icon(Icons.add),
             tooltip: 'Register a boat',
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const BoatRegistrationScreen()),
-              );
+              // TODO: Navigate to boat registration wizard (Task 2.5)
             },
           ),
         ],
@@ -243,9 +241,7 @@ class _BoatListScreenState extends State<BoatListScreen> {
                                   const SizedBox(height: 12),
                                   ElevatedButton.icon(
                                     onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => const BoatRegistrationScreen()),
-                                      );
+                                      // TODO: Navigate to registration wizard
                                     },
                                     icon: const Icon(Icons.add),
                                     label: const Text('Register your first boat'),
@@ -292,7 +288,7 @@ class _BoatListScreenState extends State<BoatListScreen> {
             _applyFilters();
           });
         },
-        selectedColor: AppColors.primary.withValues(alpha: 0.2),
+        selectedColor: AppColors.primary.withOpacity(0.2),
         checkmarkColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -335,7 +331,7 @@ class _BoatCard extends StatelessWidget {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: AppColors.deepSea.withValues(alpha: 0.1),
+                          color: AppColors.deepSea.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(Icons.directions_boat, color: AppColors.deepSea, size: 32),
@@ -420,9 +416,7 @@ class _BoatCard extends StatelessWidget {
                             onPressed: boat.isTripReady
                                 ? () {
                                     Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => StartTripScreen(boatId: boat.id),
-                                      ),
+                                      MaterialPageRoute(builder: (_) => StartTripScreen(boatId: boat.id)),
                                     );
                                   }
                                 : null,
@@ -460,9 +454,9 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

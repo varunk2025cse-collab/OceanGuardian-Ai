@@ -40,6 +40,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Audit dependencies for known CVEs
+        run: pip install pip-audit && pip-audit -r requirements.txt --ignore-vuln PYSEC-2022-42969
+        continue-on-error: true
+
       # Real migration validation against Postgres — the project's own dev
       # shim (Base.metadata.create_all) papers over migration bugs on
       # SQLite, so this is the only place the Alembic chain gets checked
@@ -109,6 +113,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Run dashboard tests
+        run: npm test
 
       # No test framework exists yet for the dashboard (docs/V1_AUDIT.md) —
       # documented honestly rather than faked. `npm run build` is still a

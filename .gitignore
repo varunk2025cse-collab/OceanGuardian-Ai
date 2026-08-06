@@ -33,3 +33,6 @@ rescue-dashboard/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# AutoClaw KDream data
+.autoclaw/

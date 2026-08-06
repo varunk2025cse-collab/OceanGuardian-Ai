@@ -76,7 +76,7 @@ app = FastAPI(
         "Builds on Phase 1-4 foundation (offline GPS, SOS, weather risk, boats, trips, "
         "family tracking, and React Rescue Dashboard)."
     ),
-    version="0.5.0",
+    version="2.0.0-rc1",
 )
 
 app.add_middleware(
@@ -175,7 +175,7 @@ def root():
     return {
         "status": "ok",
         "service": settings.app_name,
-        "version": "0.5.0",
+        "version": "2.0.0-rc1",
         "environment": settings.environment,
     }
 
@@ -196,7 +196,7 @@ def health():
     return {
         "status": "healthy" if db_status == "healthy" else "degraded",
         "database": db_status,
-        "version": "0.5.0",
+        "version": "2.0.0-rc1",
         "environment": settings.environment,
     }
 
@@ -222,7 +222,7 @@ def ready():
         content={
             "status": "ready" if db_status == "ready" else "not_ready",
             "database": db_status,
-            "version": "0.5.0",
+            "version": "2.0.0-rc1",
             "environment": settings.environment,
         },
     )
@@ -235,7 +235,7 @@ def live():
     because a DB outage should not cause Kubernetes to restart the pod."""
     return {
         "status": "alive",
-        "version": "0.5.0",
+        "version": "2.0.0-rc1",
         "environment": settings.environment,
     }
 
@@ -257,4 +257,5 @@ def system_info():
         "notification_provider": settings.notification_provider if settings.notification_provider == "simulation" else (
             "twilio" if (settings.twilio_account_sid and settings.twilio_auth_token) else "simulation (Twilio credentials not set — falling back)"
         ),
+        "version": "2.0.0-rc1",
     }

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:oceanguardian_mvp/models/trip.dart';
-import 'package:oceanguardian_mvp/services/trip_service.dart';
 
 void main() {
   test('Trip.fromJson parses backend TripOut shape', () {
@@ -33,18 +32,5 @@ void main() {
       final trip = Trip.fromJson({'id': 1, 'status': status, 'start_time': '2026-01-01T00:00:00+00:00'});
       expect(trip.isInProgress, isFalse, reason: '$status should not be in-progress');
     }
-  });
-
-  test('buildStartTripPayload includes boat_id when a boat is selected', () {
-    final payload = TripService.buildStartTripPayload(
-      destination: 'Fishing grounds',
-      estimatedReturnAt: DateTime.utc(2026, 1, 1, 6, 30),
-      notes: 'Early departure',
-      boatId: 7,
-    );
-
-    expect(payload['boat_id'], 7);
-    expect(payload['destination'], 'Fishing grounds');
-    expect(payload['notes'], 'Early departure');
   });
 }

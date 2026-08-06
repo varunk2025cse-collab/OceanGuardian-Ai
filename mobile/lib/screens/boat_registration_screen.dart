@@ -371,7 +371,7 @@ class _BoatRegistrationScreenState extends State<BoatRegistrationScreen> {
           const Text('Optional — helps with safety assessment', style: TextStyle(color: AppColors.textSecondary)),
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
-            initialValue: _vesselClass,
+            value: _vesselClass,
             decoration: const InputDecoration(
               labelText: 'Vessel Class',
               prefixIcon: Icon(Icons.category),
@@ -389,7 +389,7 @@ class _BoatRegistrationScreenState extends State<BoatRegistrationScreen> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            initialValue: _hullMaterial,
+            value: _hullMaterial,
             decoration: const InputDecoration(
               labelText: 'Hull Material',
               prefixIcon: Icon(Icons.directions_boat),
@@ -459,7 +459,7 @@ class _BoatRegistrationScreenState extends State<BoatRegistrationScreen> {
           const Text('Optional — helps estimate fuel needs', style: TextStyle(color: AppColors.textSecondary)),
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
-            initialValue: _engineType,
+            value: _engineType,
             decoration: const InputDecoration(
               labelText: 'Engine Type',
               prefixIcon: Icon(Icons.build),
