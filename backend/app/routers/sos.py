@@ -127,9 +127,11 @@ def update_sos_status(
 
     new_status = SOSStatus(payload.status)
 
+    # Explicit authorization evaluation (avoid placeholder 'pass')
+    allowed = False
     if current_user.role == UserRole.operator:
         # Operators can do anything
-        pass
+        allowed = True
     elif current_user.role == UserRole.fisherman:
         # Fishermen may only mark their OWN alert as false_alarm
         if alert.user_id != current_user.id:
@@ -138,9 +140,15 @@ def update_sos_status(
         if new_status != SOSStatus.false_alarm:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Fishermen may only mark their own alert as false_alarm")
+        allowed = True
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Only operators or the triggering fisherman can update SOS status")
+
+    if not allowed:
+        # Defensive: should not be reached because above branches either set allowed
+        # or raise, but keep behaviour explicit for auditing and testing.
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update SOS status")
 
     alert.status = new_status
     if payload.rescue_notes is not None:

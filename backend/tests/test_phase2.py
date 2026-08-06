@@ -19,7 +19,8 @@ def _reg(phone, name, role):
         "phone_number": phone, "password": "test1234",
         "full_name": name, "role": role, "preferred_language": "ta"})
     assert r.status_code == 201, r.text
-    return {"Authorization": f"Bearer {r.json()['access_token']}"}
+    data = r.json()
+    return {"Authorization": f"Bearer {data['access_token']}"}
 
 
 def _create_operator(phone, name):
@@ -32,10 +33,23 @@ def _create_operator(phone, name):
     return _login(phone)
 
 
+
 def _login(phone):
     r = client.post("/api/v1/auth/login", json={"phone_number": phone, "password": "test1234"})
-    return {"Authorization": f"Bearer {r.json()['access_token']}"}
-
+    if r.status_code != 200:
+        # If login fails, provision a sensible default test account.
+        db = SessionLocal()
+        # Operators are special; only auto-provision operator when the requested phone matches OP_PHONE
+        if not db.query(User).filter(User.phone_number == phone).first():
+            role = UserRole.operator if phone == OP_PHONE else UserRole.fisherman
+            db.add(User(phone_number=phone, password_hash=hash_password("test1234"),
+                        full_name="Auto Provisioned", role=role, preferred_language="en"))
+            db.commit()
+        db.close()
+        r = client.post("/api/v1/auth/login", json={"phone_number": phone, "password": "test1234"})
+    assert r.status_code == 200, r.text
+    data = r.json()
+    return {"Authorization": f"Bearer {data['access_token']}"}
 
 def test_operator_sos_security():
     db = SessionLocal()

@@ -23,12 +23,18 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final result = await BoatService.instance.getEquipment(widget.boatId);
+      final result = await BoatService.instance
+          .getEquipment(widget.boatId, forceRefresh: true);
       _equipment = result.data;
     } catch (e) {
       _error = e.toString();
+      final cached = await BoatService.instance.getEquipment(widget.boatId);
+      _equipment = cached.data;
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -36,28 +42,38 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
 
   Color _conditionColor(String condition) {
     switch (condition) {
-      case 'good': return AppColors.safeGreen;
-      case 'fair': return AppColors.warningAmber;
-      case 'poor': return AppColors.warning;
-      case 'missing': return AppColors.coral;
-      default: return AppColors.textSecondary;
+      case 'good':
+        return AppColors.safeGreen;
+      case 'fair':
+        return AppColors.warningAmber;
+      case 'poor':
+        return AppColors.warning;
+      case 'missing':
+        return AppColors.coral;
+      default:
+        return AppColors.textSecondary;
     }
   }
 
   IconData _conditionIcon(String condition) {
     switch (condition) {
-      case 'good': return Icons.check_circle;
-      case 'fair': return Icons.warning_amber_rounded;
-      case 'poor': return Icons.error_outline;
-      case 'missing': return Icons.cancel;
-      default: return Icons.help_outline;
+      case 'good':
+        return Icons.check_circle;
+      case 'fair':
+        return Icons.warning_amber_rounded;
+      case 'poor':
+        return Icons.error_outline;
+      case 'missing':
+        return Icons.cancel;
+      default:
+        return Icons.help_outline;
     }
   }
 
   Future<void> _showAddEquipmentDialog() async {
     final nameCtrl = TextEditingController();
     final qtyCtrl = TextEditingController(text: '1');
-    String category = 'life_saving';
+    String category = EquipmentCategories.lifeSaving;
     String condition = 'good';
     bool isMandatory = false;
 
@@ -65,47 +81,72 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Add Equipment', style: TextStyle(fontWeight: FontWeight.w800)),
+          title: const Text('Add Equipment',
+              style: TextStyle(fontWeight: FontWeight.w800)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Item Name *', prefixIcon: Icon(Icons.inventory_2)),
+                  decoration: const InputDecoration(
+                      labelText: 'Item Name *',
+                      prefixIcon: Icon(Icons.inventory_2)),
                   textCapitalization: TextCapitalization.words,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: category,
-                  decoration: const InputDecoration(labelText: 'Category', prefixIcon: Icon(Icons.category)),
+                  decoration: const InputDecoration(
+                      labelText: 'Category', prefixIcon: Icon(Icons.category)),
                   items: const [
-                    DropdownMenuItem(value: 'life_saving', child: Text('Life Saving')),
-                    DropdownMenuItem(value: 'fire_safety', child: Text('Fire Safety')),
-                    DropdownMenuItem(value: 'communication', child: Text('Communication')),
-                    DropdownMenuItem(value: 'navigation', child: Text('Navigation')),
-                    DropdownMenuItem(value: 'fishing_gear', child: Text('Fishing Gear')),
-                    DropdownMenuItem(value: 'engine', child: Text('Engine')),
-                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.lifeSaving,
+                        child: Text('Life Saving')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.fireSafety,
+                        child: Text('Fire Safety')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.communication,
+                        child: Text('Communication')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.navigation,
+                        child: Text('Navigation')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.fishingGear,
+                        child: Text('Fishing Gear')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.engineSpare,
+                        child: Text('Engine Spare')),
+                    DropdownMenuItem(
+                        value: EquipmentCategories.other, child: Text('Other')),
                   ],
-                  onChanged: (v) { if (v != null) setDialogState(() => category = v); },
+                  onChanged: (v) {
+                    if (v != null) setDialogState(() => category = v);
+                  },
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: condition,
-                  decoration: const InputDecoration(labelText: 'Condition', prefixIcon: Icon(Icons.health_and_safety)),
+                  decoration: const InputDecoration(
+                      labelText: 'Condition',
+                      prefixIcon: Icon(Icons.health_and_safety)),
                   items: const [
                     DropdownMenuItem(value: 'good', child: Text('Good ●')),
                     DropdownMenuItem(value: 'fair', child: Text('Fair ●')),
                     DropdownMenuItem(value: 'poor', child: Text('Poor ●')),
-                    DropdownMenuItem(value: 'missing', child: Text('Missing ●')),
+                    DropdownMenuItem(
+                        value: 'missing', child: Text('Missing ●')),
                   ],
-                  onChanged: (v) { if (v != null) setDialogState(() => condition = v); },
+                  onChanged: (v) {
+                    if (v != null) setDialogState(() => condition = v);
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: qtyCtrl,
-                  decoration: const InputDecoration(labelText: 'Quantity', prefixIcon: Icon(Icons.numbers)),
+                  decoration: const InputDecoration(
+                      labelText: 'Quantity', prefixIcon: Icon(Icons.numbers)),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 8),
@@ -119,14 +160,16 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel')),
             FilledButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
                 Navigator.of(ctx).pop();
                 setState(() => _loading = true);
                 try {
-                  await BoatService.instance.assignCrew(widget.boatId, {
+                  await BoatService.instance.createEquipment(widget.boatId, {
                     'item_name': nameCtrl.text.trim(),
                     'category': category,
                     'condition': condition,
@@ -135,9 +178,14 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
                   });
                   await _load();
                 } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text('Failed: $e')));
+                  }
                 } finally {
-                  if (mounted) setState(() => _loading = false);
+                  if (mounted) {
+                    setState(() => _loading = false);
+                  }
                 }
               },
               child: const Text('Add'),
@@ -157,14 +205,18 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
     final totalItems = _equipment.length;
     final okItems = _equipment.where((e) => e.isUsable).length;
     final mandatoryTotal = _equipment.where((e) => e.isMandatory).length;
-    final mandatoryOk = _equipment.where((e) => e.isMandatory && e.isUsable).length;
+    final mandatoryOk =
+        _equipment.where((e) => e.isMandatory && e.isUsable).length;
 
     return Scaffold(
       backgroundColor: AppColors.sand,
       appBar: AppBar(
         title: const Text('Equipment'),
         actions: [
-          IconButton(icon: const Icon(Icons.add), tooltip: 'Add equipment', onPressed: _showAddEquipmentDialog),
+          IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Add equipment',
+              onPressed: _showAddEquipmentDialog),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -193,16 +245,22 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(Icons.checklist, color: AppColors.deepSea),
+                                        const Icon(Icons.checklist,
+                                            color: AppColors.deepSea),
                                         const SizedBox(width: 8),
-                                        Text('Checklist Score', style: Theme.of(context).textTheme.titleMedium),
+                                        Text('Checklist Score',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium),
                                         const Spacer(),
                                         Text(
                                           '$okItems / $totalItems',
                                           style: TextStyle(
                                             fontSize: 22,
                                             fontWeight: FontWeight.w900,
-                                            color: okItems == totalItems ? AppColors.safeGreen : AppColors.warningAmber,
+                                            color: okItems == totalItems
+                                                ? AppColors.safeGreen
+                                                : AppColors.warningAmber,
                                           ),
                                         ),
                                       ],
@@ -211,10 +269,14 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
                                       child: LinearProgressIndicator(
-                                        value: totalItems > 0 ? okItems / totalItems : 0,
+                                        value: totalItems > 0
+                                            ? okItems / totalItems
+                                            : 0,
                                         backgroundColor: AppColors.border,
                                         valueColor: AlwaysStoppedAnimation(
-                                          okItems == totalItems ? AppColors.safeGreen : AppColors.warningAmber,
+                                          okItems == totalItems
+                                              ? AppColors.safeGreen
+                                              : AppColors.warningAmber,
                                         ),
                                         minHeight: 8,
                                       ),
@@ -224,7 +286,9 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
                                       Text(
                                         'Mandatory: $mandatoryOk/$mandatoryTotal items OK',
                                         style: TextStyle(
-                                          color: mandatoryOk == mandatoryTotal ? AppColors.safeGreen : AppColors.coral,
+                                          color: mandatoryOk == mandatoryTotal
+                                              ? AppColors.safeGreen
+                                              : AppColors.coral,
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13,
                                         ),
@@ -237,19 +301,30 @@ class _BoatEquipmentScreenState extends State<BoatEquipmentScreen> {
                             const SizedBox(height: 12),
                             // Grouped equipment
                             ...grouped.entries.map((entry) => Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8, bottom: 6),
-                                  child: Text(
-                                    entry.key.replaceAll('_', ' ').toUpperCase(),
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.textSecondary),
-                                  ),
-                                ),
-                                ...entry.value.map((item) => _EquipmentCard(item: item, conditionColor: _conditionColor(item.condition), conditionIcon: _conditionIcon(item.condition))),
-                                const SizedBox(height: 4),
-                              ],
-                            )),
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 8, bottom: 6),
+                                      child: Text(
+                                        entry.key
+                                            .replaceAll('_', ' ')
+                                            .toUpperCase(),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 13,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                    ...entry.value.map((item) => _EquipmentCard(
+                                        item: item,
+                                        conditionColor:
+                                            _conditionColor(item.condition),
+                                        conditionIcon:
+                                            _conditionIcon(item.condition))),
+                                    const SizedBox(height: 4),
+                                  ],
+                                )),
                           ],
                         ),
                 ),
@@ -262,12 +337,16 @@ class _EquipmentCard extends StatelessWidget {
   final Color conditionColor;
   final IconData conditionIcon;
 
-  const _EquipmentCard({required this.item, required this.conditionColor, required this.conditionIcon});
+  const _EquipmentCard(
+      {required this.item,
+      required this.conditionColor,
+      required this.conditionIcon});
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '${item.itemName}, condition ${item.condition}, quantity ${item.quantity}',
+      label:
+          '${item.itemName}, condition ${item.condition}, quantity ${item.quantity}',
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
@@ -283,12 +362,15 @@ class _EquipmentCard extends StatelessWidget {
           ),
           title: Row(
             children: [
-              Expanded(child: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.w700))),
+              Expanded(
+                  child: Text(item.itemName,
+                      style: const TextStyle(fontWeight: FontWeight.w700))),
               if (item.isMandatory)
                 const Icon(Icons.star, size: 14, color: AppColors.warningAmber),
             ],
           ),
-          subtitle: Text('Qty: ${item.quantity}  ·  ${item.condition.toUpperCase()}'),
+          subtitle:
+              Text('Qty: ${item.quantity}  ·  ${item.condition.toUpperCase()}'),
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -297,7 +379,10 @@ class _EquipmentCard extends StatelessWidget {
             ),
             child: Text(
               item.condition,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: conditionColor),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: conditionColor),
             ),
           ),
         ),
@@ -318,13 +403,21 @@ class _EmptyEquipment extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.inventory_2_outlined, size: 72, color: AppColors.textDisabled),
+            const Icon(Icons.inventory_2_outlined,
+                size: 72, color: AppColors.textDisabled),
             const SizedBox(height: 16),
-            const Text('No equipment records yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const Text('No equipment records yet',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            const Text('Track life jackets, fire extinguishers, VHF radio and more', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+            const Text(
+                'Track life jackets, fire extinguishers, VHF radio and more',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
-            FilledButton.icon(onPressed: onAdd, icon: const Icon(Icons.add), label: const Text('Add Equipment')),
+            FilledButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Equipment')),
           ],
         ),
       ),
@@ -349,7 +442,10 @@ class _ErrorRetry extends StatelessWidget {
             const SizedBox(height: 16),
             Text(error, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Retry')),
+            FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry')),
           ],
         ),
       ),

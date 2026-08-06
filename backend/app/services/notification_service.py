@@ -75,9 +75,19 @@ class TwilioSmsProvider(NotificationProvider):
         self._from = settings.twilio_from_number
 
     def send(self, *, to_user_id: int, message: str, priority: NotificationPriority) -> DeliveryResult:
-        # Requires the recipient's phone number, resolved by the caller
-        # (NotificationEngine) since this provider only knows how to dial out.
-        raise NotImplementedError("TwilioSmsProvider.send_sms(to_phone=...) must be used via NotificationEngine")
+        # The generic provider interface only exposes a user-id, but Twilio
+        # delivery requires a phone number. Return a failed result instead of
+        # raising so the notification workflow can audit the failure without
+        # breaking the request path.
+        logger.warning(
+            "Twilio provider requested for user_id=%s without an explicit phone number; delivery was not attempted",
+            to_user_id,
+        )
+        return DeliveryResult(
+            status="failed",
+            detail="Twilio provider requires an explicit phone number for delivery",
+            simulated=False,
+        )
 
     def send_sms(self, *, to_phone: str, message: str) -> DeliveryResult:
         try:
@@ -152,3 +162,35 @@ class NotificationEngine:
         for row in created:
             db.refresh(row)
         return created
+
+    @staticmethod
+    def publish_family_event(
+        db: Session,
+        fisherman_id: int,
+        message: str,
+        related_event_id: int | None = None,
+        priority: NotificationPriority = NotificationPriority.high,
+        notification_type: str = "push",
+    ) -> tuple[int, str]:
+        """Compatibility helper: publish a family notification request to the internal EventBus.
+
+        This does not replace the existing notify_family_of_event immediate-send path — it
+        offers a durable event ingestion point for a gradual rollout. Returns (event_id, correlation_id).
+        """
+        try:
+            from app.event_bus import EventBus
+        except Exception:
+            # If EventBus is not available for any reason, fail gracefully
+            logger.exception("EventBus unavailable while publishing family event")
+            raise
+
+        payload = {
+            "fisherman_id": fisherman_id,
+            "message": message,
+            "related_event_id": related_event_id,
+            "notification_type": notification_type,
+        }
+        metadata = {"priority": priority.value}
+        event_id, correlation_id = EventBus.publish(db, event_type="family.notification.request", payload=payload, metadata=metadata, priority=priority.value, source_module="family_portal")
+        logger.info("Published family notification event event_id=%s corr=%s fisherman_id=%s priority=%s", event_id, correlation_id, fisherman_id, priority.value)
+        return event_id, correlation_id

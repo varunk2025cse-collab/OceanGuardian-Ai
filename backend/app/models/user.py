@@ -8,7 +8,7 @@ Changes from MVP:
 """
 import enum
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, func
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, func, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -43,6 +43,8 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    # When the password was last changed — used to invalidate previously-issued tokens
+    password_changed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
     locations = relationship("LocationPing", back_populates="user", cascade="all, delete-orphan",
@@ -75,5 +77,21 @@ class TokenBlocklist(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     jti = Column(String(255), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class PasswordResetToken(Base):
+    """One-time tokens for password recovery flows.
+
+    The token itself is not stored verbatim — only a SHA256 hash is stored so
+    a leaked DB snapshot does not reveal usable reset tokens.
+    """
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String(128), nullable=False, unique=True, index=True)
+    used = Column(Boolean, default=False, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

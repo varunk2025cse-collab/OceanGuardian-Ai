@@ -55,3 +55,37 @@ class TokenPair(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class PasswordResetRequest(BaseModel):
+    phone_number: str
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=6)
+
+
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    preferred_language: str | None = None
+    boat_name: str | None = None
+    boat_registration_number: str | None = None
+    home_harbor: str | None = None
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
+
+
+class UserAdminUpdate(BaseModel):
+    full_name: str | None = None
+    preferred_language: str | None = None
+    role: str | None = None
+    home_harbor: str | None = None
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
+    is_active: bool | None = None
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6)

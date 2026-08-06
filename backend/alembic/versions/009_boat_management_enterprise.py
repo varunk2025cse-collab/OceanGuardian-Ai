@@ -325,6 +325,10 @@ def downgrade() -> None:
             batch_op.drop_column("logged_by")
 
     if _table_exists("boat_maintenance"):
+        if _index_exists("ix_maintenance_status", "boat_maintenance"):
+            op.drop_index("ix_maintenance_status", table_name="boat_maintenance")
+        if _index_exists("ix_maintenance_scheduled_date", "boat_maintenance"):
+            op.drop_index("ix_maintenance_scheduled_date", table_name="boat_maintenance")
         for col in ("status", "completed_by", "updated_at"):
             if _col_exists("boat_maintenance", col):
                 with op.batch_alter_table("boat_maintenance") as batch_op:
@@ -341,6 +345,14 @@ def downgrade() -> None:
     existing = {c["name"] for c in sa_inspect(op.get_bind()).get_columns("boats")}
     cols_to_drop = [c for c in boats_added if c in existing]
     if cols_to_drop:
+        for idx in (
+            "ix_boats_status",
+            "ix_boats_home_harbor_id",
+            "ix_boats_verification_status",
+            "ix_boats_deleted_at",
+        ):
+            if _index_exists(idx, "boats"):
+                op.drop_index(idx, table_name="boats")
         with op.batch_alter_table("boats") as batch_op:
             for col in cols_to_drop:
                 batch_op.drop_column(col)

@@ -36,6 +36,13 @@ def _column_exists(table, column):
     return column in {c["name"] for c in sa_inspect(bind).get_columns(table)}
 
 
+def _index_exists(name, table):
+    bind = op.get_bind()
+    if not sa_inspect(bind).has_table(table):
+        return False
+    return any(idx["name"] == name for idx in sa_inspect(bind).get_indexes(table))
+
+
 def upgrade() -> None:
     # sos_alerts.network_type
     if _table_exists("sos_alerts") and not _column_exists("sos_alerts", "network_type"):
@@ -77,7 +84,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     if _table_exists("incident_events"):
         op.drop_table('incident_events')
-    if _table_exists("risk_incidents") and _column_exists("risk_incidents", "ix_risk_incidents_status"):
+    if _table_exists("risk_incidents") and _index_exists("ix_risk_incidents_status", "risk_incidents"):
         op.drop_index('ix_risk_incidents_status', table_name='risk_incidents')
     if _table_exists("risk_incidents"):
         for col in ("closed_at", "acknowledged_at", "acknowledged_by", "status", "fisherman_id"):

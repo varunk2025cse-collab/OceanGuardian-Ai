@@ -136,7 +136,8 @@ class BoatService {
     try {
       // Try API first (we need the ID from the server)
       try {
-        final data = await ApiClient.instance.postV2('/boats', payload.toJson());
+        final data =
+            await ApiClient.instance.postV2('/boats', payload.toJson());
         final boat = Boat.fromJson(data as Map<String, dynamic>);
         await _repo.upsertBoat(boat);
         await refreshBoats();
@@ -169,7 +170,8 @@ class BoatService {
   }
 
   /// Update a boat with optimistic locking — writes locally first.
-  Future<BoatServiceResult<Boat>> updateBoat(int boatId, BoatUpdate update) async {
+  Future<BoatServiceResult<Boat>> updateBoat(
+      int boatId, BoatUpdate update) async {
     isLoading.value = true;
     error.value = null;
 
@@ -222,7 +224,8 @@ class BoatService {
   }
 
   /// Change boat status via the FSM.
-  Future<BoatServiceResult<Boat>> changeStatus(int boatId, BoatStatusChange change) async {
+  Future<BoatServiceResult<Boat>> changeStatus(
+      int boatId, BoatStatusChange change) async {
     try {
       final data = await ApiClient.instance.postV2(
         '/boats/$boatId/status',
@@ -245,12 +248,14 @@ class BoatService {
       );
       await _repo.queueSyncAction(action);
       await refreshPendingCount();
-      return BoatServiceResult.offline(message: 'Status change will sync when signal returns');
+      return BoatServiceResult.offline(
+          message: 'Status change will sync when signal returns');
     }
   }
 
   /// Decommission (soft-delete) a boat.
-  Future<BoatServiceResult<void>> deleteBoat(int boatId, {String? reason}) async {
+  Future<BoatServiceResult<void>> deleteBoat(int boatId,
+      {String? reason}) async {
     try {
       await ApiClient.instance.deleteV2('/boats/$boatId');
       await _repo.getBoatById(boatId); // clear local
@@ -266,7 +271,8 @@ class BoatService {
       );
       await _repo.queueSyncAction(action);
       await refreshPendingCount();
-      return BoatServiceResult.offline(message: 'Deletion will sync when signal returns');
+      return BoatServiceResult.offline(
+          message: 'Deletion will sync when signal returns');
     }
   }
 
@@ -318,7 +324,8 @@ class BoatService {
       );
       await _repo.queueSyncAction(action);
       await refreshPendingCount();
-      return BoatServiceResult.offline(message: 'Document will upload when signal returns');
+      return BoatServiceResult.offline(
+          message: 'Document will upload when signal returns');
     }
   }
 
@@ -336,7 +343,8 @@ class BoatService {
       );
       await _repo.queueSyncAction(action);
       await refreshPendingCount();
-      return BoatServiceResult.offline(message: 'Document deletion will sync when signal returns');
+      return BoatServiceResult.offline(
+          message: 'Document deletion will sync when signal returns');
     }
   }
 
@@ -353,6 +361,59 @@ class BoatService {
     } catch (_) {
       final cached = await _repo.getCrew(boatId);
       return BoatResult(data: cached, fromCache: true);
+    }
+  }
+
+  Future<BoatResult<List<BoatEquipmentItem>>> getEquipment(int boatId,
+      {bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      try {
+        final items = await _repo.fetchAndCacheEquipment(boatId);
+        return BoatResult(data: items, fromCache: false);
+      } catch (_) {
+        // Fall through to cache
+      }
+    }
+    final cached = await _repo.getEquipment(boatId);
+    return BoatResult(data: cached, fromCache: true);
+  }
+
+  Future<BoatServiceResult<BoatEquipmentItem>> createEquipment(
+    int boatId,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final data =
+          await ApiClient.instance.postV2('/boats/$boatId/equipment', payload);
+      final item = BoatEquipmentItem.fromJson(data as Map<String, dynamic>);
+      await _repo.upsertEquipmentItem(item);
+      return BoatServiceResult.success(item);
+    } catch (_) {
+      final localId = -DateTime.now().millisecondsSinceEpoch;
+      final item = BoatEquipmentItem(
+        id: localId,
+        boatId: boatId,
+        category: payload['category'] as String,
+        itemName: payload['item_name'] as String,
+        quantity: payload['quantity'] as int? ?? 1,
+        condition: payload['condition'] as String? ?? 'good',
+        lastCheckedAt: null,
+        expiryDate: null,
+        notes: payload['notes'] as String?,
+        isMandatory: payload['is_mandatory'] == true,
+        createdAt: DateTime.now(),
+      );
+      await _repo.upsertEquipmentItem(item);
+      final action = BoatSyncAction(
+        id: _uuid.v4(),
+        action: 'create_equipment',
+        payload: {'boat_id': boatId, ...payload},
+        createdAt: DateTime.now(),
+      );
+      await _repo.queueSyncAction(action);
+      await refreshPendingCount();
+      return BoatServiceResult.offline(
+          message: 'Equipment will sync when signal returns');
     }
   }
 
@@ -377,7 +438,8 @@ class BoatService {
       );
       await _repo.queueSyncAction(action);
       await refreshPendingCount();
-      return BoatServiceResult.offline(message: 'Crew assignment will sync when signal returns');
+      return BoatServiceResult.offline(
+          message: 'Crew assignment will sync when signal returns');
     }
   }
 
@@ -394,20 +456,17 @@ class BoatService {
       );
       await _repo.queueSyncAction(action);
       await refreshPendingCount();
-      return BoatServiceResult.offline(message: 'Crew removal will sync when signal returns');
+      return BoatServiceResult.offline(
+          message: 'Crew removal will sync when signal returns');
     }
   }
 
   // ── Equipment ─────────────────────────────────────────────────────────────
 
-  Future<BoatResult<List<BoatEquipmentItem>>> getEquipment(int boatId) async {
-    final cached = await _repo.getEquipment(boatId);
-    return BoatResult(data: cached, fromCache: true);
-  }
-
   Future<BoatResult<BoatDocument?>> getDocument(int boatId, int docId) async {
     try {
-      final data = await ApiClient.instance.getV2('/boats/$boatId/documents/$docId');
+      final data =
+          await ApiClient.instance.getV2('/boats/$boatId/documents/$docId');
       final doc = BoatDocument.fromJson(data as Map<String, dynamic>);
       await _repo.upsertDocument(doc);
       return BoatResult(data: doc, fromCache: false);
@@ -415,15 +474,20 @@ class BoatService {
       final cached = await _repo.getDocuments(boatId);
       BoatDocument? doc;
       for (final d in cached) {
-        if (d.id == docId) { doc = d; break; }
+        if (d.id == docId) {
+          doc = d;
+          break;
+        }
       }
       return BoatResult(data: doc, fromCache: true);
     }
   }
 
-  Future<BoatResult<BoatCrewMember?>> getCrewMember(int boatId, int crewId) async {
+  Future<BoatResult<BoatCrewMember?>> getCrewMember(
+      int boatId, int crewId) async {
     try {
-      final data = await ApiClient.instance.getV2('/boats/$boatId/crew/$crewId');
+      final data =
+          await ApiClient.instance.getV2('/boats/$boatId/crew/$crewId');
       final member = BoatCrewMember.fromJson(data as Map<String, dynamic>);
       await _repo.upsertCrewMember(member);
       return BoatResult(data: member, fromCache: false);
@@ -431,7 +495,10 @@ class BoatService {
       final cached = await _repo.getCrew(boatId);
       BoatCrewMember? member;
       for (final c in cached) {
-        if (c.id == crewId) { member = c; break; }
+        if (c.id == crewId) {
+          member = c;
+          break;
+        }
       }
       return BoatResult(data: member, fromCache: true);
     }
@@ -459,7 +526,8 @@ class BoatService {
       );
       await _repo.queueSyncAction(action);
       await refreshPendingCount();
-      return BoatServiceResult.offline(message: 'Role update will sync when signal returns');
+      return BoatServiceResult.offline(
+          message: 'Role update will sync when signal returns');
     }
   }
 
@@ -492,10 +560,13 @@ class BoatService {
     }
   }
 
-  Future<BoatResult<List<Map<String, dynamic>>>> getStatusHistory(int boatId) async {
+  Future<BoatResult<List<Map<String, dynamic>>>> getStatusHistory(
+      int boatId) async {
     try {
-      final data = await ApiClient.instance.getV2('/boats/$boatId/status-history');
-      return BoatResult(data: (data as List).cast<Map<String, dynamic>>(), fromCache: false);
+      final data =
+          await ApiClient.instance.getV2('/boats/$boatId/status-history');
+      return BoatResult(
+          data: (data as List).cast<Map<String, dynamic>>(), fromCache: false);
     } catch (_) {
       return BoatResult(data: [], fromCache: true);
     }
@@ -504,7 +575,8 @@ class BoatService {
   // ── Network Awareness ─────────────────────────────────────────────────────
 
   /// Whether the app currently has connectivity.
-  bool get isOnline => SyncService.instance.status.value == SyncUiStatus.online ||
+  bool get isOnline =>
+      SyncService.instance.status.value == SyncUiStatus.online ||
       SyncService.instance.status.value == SyncUiStatus.syncing;
 
   // ── Error Recovery ────────────────────────────────────────────────────────
@@ -540,8 +612,7 @@ class BoatServiceResult<T> {
   factory BoatServiceResult.error(String message) =>
       BoatServiceResult._(error: message, isSuccess: false);
 
-  factory BoatServiceResult.offline({String? message}) =>
-      BoatServiceResult._(
+  factory BoatServiceResult.offline({String? message}) => BoatServiceResult._(
         error: message,
         isOffline: true,
         isSuccess: true,
