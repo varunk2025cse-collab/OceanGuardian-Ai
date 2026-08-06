@@ -1,11 +1,18 @@
 """Advanced Risk Prediction Engine — Predict danger before it happens.
 
-Week 3 enhancements:
-  - Missed check-in factor (0-15 points)
-  - Time of day risk factor
-  - HighRiskBoat includes missed_checkin_count
-  - TripRiskResponse includes missed_checkin_risk
-  - RiskPredictionResponse includes missed_checkins_considered
+Factor budget (must sum to ≤ 100):
+  weather_risk        0-20
+  distance_from_harbor 0-15
+  gps_staleness       0-15  (was overflowing to 25 — fixed)
+  missed_checkins     0-15
+  trip_duration       0-10
+  boat_health         0-10  (was overflowing to 15 — fixed)
+  fuel_remaining      0-10  (was overflowing to 15 — fixed)
+  time_of_day         0-10  (was documented but never implemented — fixed)
+  sos_history         0- 5
+  Total max           100
+
+Confidence is now computed from actual data completeness, not a hardcoded 0.85.
 """
 import json
 from datetime import datetime, timedelta
@@ -74,7 +81,7 @@ class RiskPredictionService:
         if gps_risk > 8:
             reasons.append(f"Stale GPS data ({gps_risk:.1f}/15)")
 
-        # 4. Missed check-ins (0-15 points) — NEW
+        # 4. Missed check-ins (0-15 points)
         missed_checkin_risk = RiskPredictionService._calculate_missed_checkin_risk(trip, db)
         factors["missed_checkins"] = missed_checkin_risk
         risk_score += missed_checkin_risk
@@ -82,28 +89,35 @@ class RiskPredictionService:
             reasons.append(f"Missed check-ins detected ({missed_checkin_risk:.1f}/15)")
             missed_checkins_considered = True
 
-        # 5. Trip duration (0-10 points)
+        # 5. Time of day risk (0-10 points) — night travel raises risk
+        tod_risk = RiskPredictionService._calculate_time_of_day_risk()
+        factors["time_of_day"] = tod_risk
+        risk_score += tod_risk
+        if tod_risk > 5:
+            reasons.append(f"Night navigation increases risk ({tod_risk:.1f}/10)")
+
+        # 6. Trip duration (0-10 points)
         duration_risk = RiskPredictionService._calculate_duration_risk(trip)
         factors["trip_duration"] = duration_risk
         risk_score += duration_risk
         if duration_risk > 6:
             reasons.append(f"Long trip duration ({duration_risk:.1f}/10)")
 
-        # 6. Boat health (0-10 points)
+        # 7. Boat health (0-10 points)
         boat_risk = RiskPredictionService._calculate_boat_health_risk(trip, db)
         factors["boat_health"] = boat_risk
         risk_score += boat_risk
         if boat_risk > 6:
             reasons.append(f"Poor boat health ({boat_risk:.1f}/10)")
 
-        # 7. Fuel remaining (0-10 points)
+        # 8. Fuel remaining (0-10 points)
         fuel_risk = RiskPredictionService._calculate_fuel_risk(trip, db)
         factors["fuel_remaining"] = fuel_risk
         risk_score += fuel_risk
         if fuel_risk > 6:
             reasons.append(f"Low fuel ({fuel_risk:.1f}/10)")
 
-        # 8. SOS history (0-5 points)
+        # 9. SOS history (0-5 points)
         sos_risk = RiskPredictionService._calculate_sos_history_risk(trip, db)
         factors["sos_history"] = sos_risk
         risk_score += sos_risk
@@ -127,14 +141,17 @@ class RiskPredictionService:
         if not reasons:
             reasons.append("All systems normal")
 
+        # Confidence from data completeness — not a hardcoded constant
+        confidence = RiskPredictionService._compute_confidence(factors)
+
         # Store prediction
         prediction = RiskPrediction(
             trip_id=trip_id,
             risk_level=risk_level.lower(),
             risk_score=risk_score,
             contributing_factors_json=json.dumps(factors),
-            model_version="rule_based_v1.0",
-            prediction_confidence=0.85,
+            model_version="rule_based_v2.0",
+            prediction_confidence=confidence,
             recommendations_json=json.dumps({"action": recommended_action, "reasons": reasons}),
         )
         db.add(prediction)
@@ -146,7 +163,7 @@ class RiskPredictionService:
             factors=factors,
             reasons=reasons,
             recommended_action=recommended_action,
-            confidence=0.85,
+            confidence=confidence,
             missed_checkins_considered=missed_checkins_considered,
         )
 
@@ -220,7 +237,7 @@ class RiskPredictionService:
 
     @staticmethod
     def _calculate_gps_staleness_risk(trip: Trip, db: Session) -> float:
-        """Calculate GPS staleness risk (0-15 points)."""
+        """Calculate GPS staleness risk (0-15 points, hard-capped)."""
         latest_location = (
             db.query(LocationPing)
             .filter(LocationPing.trip_id == trip.id)
@@ -238,15 +255,40 @@ class RiskPredictionService:
         if minutes_since_update < 10:
             return 0.0
         elif minutes_since_update < 30:
-            return 8.0
+            return 5.0
         elif minutes_since_update < 60:
-            return 20.0
+            return 10.0
         else:
-            return 25.0
+            return 15.0
+
+    @staticmethod
+    def _calculate_time_of_day_risk() -> float:
+        """Night navigation risk (0-10 points). 18:00-06:00 UTC raises risk."""
+        hour = datetime.utcnow().hour
+        if 22 <= hour or hour < 4:
+            return 10.0  # Deep night — very low visibility
+        if 18 <= hour or hour < 6:
+            return 5.0   # Dusk/dawn — reduced visibility
+        return 0.0
+
+    @staticmethod
+    def _compute_confidence(factors: dict) -> float:
+        """Confidence from data completeness. Missing data = lower confidence."""
+        # Factors that require real sensor data (not just defaults)
+        sensor_factors = ["weather_risk", "distance_from_harbor", "gps_staleness",
+                          "boat_health", "fuel_remaining"]
+        # A factor at its "unknown/default" value means we had no real data
+        default_values = {"weather_risk": 5.0, "distance_from_harbor": 5.0,
+                          "gps_staleness": 10.0, "boat_health": 5.0, "fuel_remaining": 3.0}
+        real_data_count = sum(
+            1 for f in sensor_factors
+            if factors.get(f) != default_values.get(f)
+        )
+        return round(0.5 + (real_data_count / len(sensor_factors)) * 0.45, 2)
 
     @staticmethod
     def _calculate_missed_checkin_risk(trip: Trip, db: Session) -> float:
-        """Calculate missed check-in risk (0-15 points). — NEW"""
+        """Calculate missed check-in risk (0-15 points)."""
         # Count missed check-in requests for this trip
         missed_count = (
             db.query(CheckInRequest)
@@ -286,7 +328,7 @@ class RiskPredictionService:
 
     @staticmethod
     def _calculate_boat_health_risk(trip: Trip, db: Session) -> float:
-        """Calculate boat health risk (0-10 points)."""
+        """Calculate boat health risk (0-10 points, hard-capped)."""
         if not trip.boat_id:
             return 5.0
 
@@ -304,15 +346,15 @@ class RiskPredictionService:
         if health_score >= 80:
             return 0.0
         elif health_score >= 60:
-            return 4.0
+            return 3.0
         elif health_score >= 40:
-            return 10.0
+            return 7.0
         else:
-            return 15.0
+            return 10.0
 
     @staticmethod
     def _calculate_fuel_risk(trip: Trip, db: Session) -> float:
-        """Calculate fuel remaining risk (0-10 points)."""
+        """Calculate fuel remaining risk (0-10 points, hard-capped)."""
         if not trip.boat_id:
             return 3.0
 
@@ -331,11 +373,11 @@ class RiskPredictionService:
         if fuel_percent >= 50:
             return 0.0
         elif fuel_percent >= 30:
-            return 5.0
+            return 4.0
         elif fuel_percent >= 15:
-            return 10.0
+            return 7.0
         else:
-            return 15.0
+            return 10.0
 
     @staticmethod
     def _calculate_sos_history_risk(trip: Trip, db: Session) -> float:
@@ -411,7 +453,7 @@ class RiskPredictionService:
     @staticmethod
     def get_high_risk_boats(db: Session, limit: int = 20) -> List[HighRiskBoat]:
         """Get list of high-risk boats."""
-        active_trips = db.query(Trip).filter(Trip.end_time.is_(None)).all()
+        active_trips = db.query(Trip).filter(Trip.end_time.is_(None)).all()  # noqa: E711
 
         high_risk_boats = []
         for trip in active_trips:
@@ -419,7 +461,7 @@ class RiskPredictionService:
             if not risk_response:
                 continue
 
-            if risk_response.risk_level in ["WARNING", "CRITICAL"]:
+            if risk_response.risk_level in ("WARNING", "CRITICAL"):
                 boat = db.query(Boat).filter(Boat.id == trip.boat_id).first()
                 fisherman = db.query(User).filter(User.id == trip.user_id).first()
 

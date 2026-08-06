@@ -16,8 +16,25 @@ depends_on = None
 
 
 def upgrade():
-    # Add password_changed_at to users
-    op.add_column('users', sa.Column('password_changed_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False))
+    conn = op.get_bind()
+    is_sqlite = conn.dialect.name == "sqlite"
+
+    # Add password_changed_at to users.
+    # SQLite does not support CURRENT_TIMESTAMP as a server_default for
+    # ALTER TABLE ADD COLUMN — use a constant default for SQLite and
+    # CURRENT_TIMESTAMP for PostgreSQL.
+    if is_sqlite:
+        op.add_column(
+            'users',
+            sa.Column('password_changed_at', sa.DateTime(timezone=True),
+                      server_default=sa.text("'2026-01-01 00:00:00'"), nullable=False),
+        )
+    else:
+        op.add_column(
+            'users',
+            sa.Column('password_changed_at', sa.DateTime(timezone=True),
+                      server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+        )
 
     # Create password_reset_tokens table
     op.create_table(

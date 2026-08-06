@@ -267,9 +267,11 @@ class SafetyEngine:
                                 if delta_score > 0:
                                     reasons.append(f"Movement away from harbor increased distance by ~{km_delta:.0f}km, adding {delta_score} to safety score.")
                                     score += delta_score
-                except Exception:
-                    # Non-fatal: best-effort monotonicity guard
-                    pass
+                except Exception:  # noqa: BLE001 — non-fatal best-effort guard
+                    import logging as _log
+                    _log.getLogger(__name__).debug(
+                        "monotonicity guard skipped", exc_info=True
+                    )
 
         score = max(0, min(100, score))
         state = _score_to_state(score)

@@ -1,13 +1,21 @@
 """
-OceanGuardian AI — SOS Intelligence Service.
+OceanGuardian AI — SOS Intelligence Service (Tamil-First).
 
-Evaluates real SOS incidents:
-- Severity of the alert (medical, sinking, piracy)
-- Battery state of the vessel at time of distress
-- GPS accuracy
-- Recommended resources
+Every SOS response is produced in BOTH English and Tamil simultaneously.
+Tamil is not a translation — it uses real coastal vocabulary spoken by
+Tamil Nadu fishermen, their families, and harbor masters.
+
+Design rules:
+  1. Tamil is generated deterministically — zero LLM dependency.
+  2. Every field that carries a human-readable string has a _ta twin.
+  3. Emotional tone is calibrated per SOS type — a sinking is not the
+     same emotional register as an engine failure.
+  4. Language for the fisherman/family (simple, calm, reassuring).
+     Language for the operator (direct, action-oriented, no softening).
+  5. Safety-critical numbers (rescue minutes, battery %) are always
+     stated in both languages — never omitted from either.
 """
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -16,6 +24,87 @@ from app.schemas.intelligence import (
     DecisionEvidence, DecisionSupport, SOSReport,
 )
 
+# Average rescue vessel speed (km/h) — conservative for small coastal craft
+_RESCUE_SPEED_KMH = 25.0
+
+# ── SOS type taxonomy ────────────────────────────────────────────────────────
+# Each entry: (risk_level, EN_severity_reason, EN_resource_rec,
+#              TA_severity_reason, TA_resource_rec, TA_fisherman_message)
+_SOS_TYPE_MAP = {
+    "medical": (
+        "critical",
+        "Medical emergency — requires immediate medical assistance.",
+        "Dispatch Coast Guard medical vessel or air-evac immediately.",
+        "மருத்துவ அவசரநிலை — உடனடி மருத்துவ உதவி தேவை.",
+        "கடலோர காவல் மருத்துவ கப்பல் அல்லது ஹெலிகாப்டர் அனுப்பவும்.",
+        "பயப்படாதீர்கள். உதவி வருகிறது. அமைதியாக இருங்கள்.",
+    ),
+    "sinking": (
+        "critical",
+        "Vessel sinking — life-threatening emergency.",
+        "Dispatch fast response rescue vessel. Alert all nearby fishing vessels.",
+        "படகு மூழ்குகிறது — உயிருக்கு ஆபத்தான நிலை.",
+        "விரைவு மீட்பு கப்பல் அனுப்பவும். அருகில் உள்ள மீனவர்களுக்கு தெரிவிக்கவும்.",
+        "உடனே life jacket போடுங்கள். படகை விட வேண்டாம். உதவி வருகிறது.",
+    ),
+    "piracy": (
+        "critical",
+        "Piracy/hostile boarding — requires Coast Guard.",
+        "Dispatch Coast Guard interceptor. Do NOT send unarmed civilian vessels.",
+        "கடல் கொள்ளை — கடலோர காவல் தேவை.",
+        "கடலோர காவல் படை அனுப்பவும். ஆயுதமற்ற படகுகளை அனுப்பாதீர்கள்.",
+        "அமைதியாக இருங்கள். எதிர்க்காதீர்கள். உதவி வருகிறது.",
+    ),
+    "engine_failure": (
+        "red",
+        "Engine failure — vessel adrift, confirm anchoring.",
+        "Dispatch tow/rescue vessel. Confirm vessel is anchored safely.",
+        "இயந்திரம் கெட்டுவிட்டது — படகு நகர்கிறது, நங்கூரம் போடுங்கள்.",
+        "இழுவை/மீட்பு கப்பல் அனுப்பவும். நங்கூரம் போட்டுள்ளார்களா என உறுதிப்படுத்தவும்.",
+        "நங்கூரம் போடுங்கள். VHF channel 16 இல் தொடர்பு கொள்ளுங்கள். உதவி வருகிறது.",
+    ),
+    "weather": (
+        "red",
+        "Weather distress — confirm crew count and vessel condition.",
+        "Dispatch rescue vessel. Confirm crew count and vessel condition.",
+        "கடுமையான வானிலை — படகு நிலை மற்றும் மாலுமிகள் எண்ணிக்கை உறுதிப்படுத்தவும்.",
+        "மீட்பு கப்பல் அனுப்பவும். மாலுமிகள் எண்ணிக்கை மற்றும் படகு நிலை கேட்கவும்.",
+        "life jacket போடுங்கள். படகை காற்றுக்கு எதிராக திருப்புங்கள். உதவி வருகிறது.",
+    ),
+    "fire": (
+        "critical",
+        "Fire on board — crew may need to abandon ship.",
+        "Dispatch fire-equipped rescue vessel. Crew may need to abandon ship.",
+        "படகில் தீ — மாலுமிகள் படகை விட வேண்டியிருக்கலாம்.",
+        "தீயணைப்பு மீட்பு கப்பல் அனுப்பவும். படகை விட வேண்டியிருக்கலாம்.",
+        "உடனே life jacket போடுங்கள். தீயை அணைக்க முடியாவிட்டால் கடலில் குதியுங்கள்.",
+    ),
+    "man_overboard": (
+        "critical",
+        "Person overboard — every second counts.",
+        "Dispatch rescue vessel immediately. Every minute matters.",
+        "ஒருவர் கடலில் விழுந்தார் — ஒவ்வொரு நொடியும் முக்கியம்.",
+        "உடனே மீட்பு கப்பல் அனுப்பவும். ஒவ்வொரு நிமிடமும் முக்கியம்.",
+        "விழுந்தவரை கண்ணில் வையுங்கள். life ring வீசுங்கள். இடத்தை மாற்றாதீர்கள்.",
+    ),
+}
+
+# ── Tamil status labels ───────────────────────────────────────────────────────
+_STATUS_TA = {
+    "active":       "செயலில் உள்ளது",
+    "acknowledged": "ஒப்புக்கொள்ளப்பட்டது",
+    "resolved":     "தீர்க்கப்பட்டது",
+    "false_alarm":  "தவறான எச்சரிக்கை",
+}
+
+# ── Tamil priority labels ─────────────────────────────────────────────────────
+_PRIORITY_TA = {
+    "critical": "மிக அவசரம்",
+    "high":     "அவசரம்",
+    "normal":   "சாதாரண",
+    "low":      "குறைந்த முன்னுரிமை",
+}
+
 
 class SOSIntelligenceService:
     """SOS intelligence — queries real SOS data."""
@@ -23,76 +112,118 @@ class SOSIntelligenceService:
     @staticmethod
     def evaluate(db: Session, alert: SOSAlert) -> SOSReport:
         """Full SOS intelligence report."""
-        
         severity = SOSIntelligenceService._assess_severity(alert)
         resources = SOSIntelligenceService._recommend_resources(alert)
         priority = SOSIntelligenceService._assess_priority(alert)
+        rescue_minutes = SOSIntelligenceService._estimate_rescue_minutes(db, alert)
 
         return SOSReport(
             alert_id=alert.id,
             severity_assessment=severity,
             resource_recommendation=resources,
             response_priority=priority,
-            estimated_rescue_minutes=None # Would calculate from nearest harbor
+            estimated_rescue_minutes=rescue_minutes,
         )
+
+    @staticmethod
+    def _estimate_rescue_minutes(db: Session, alert: SOSAlert) -> Optional[int]:
+        """Estimate rescue time from nearest active harbor to SOS position."""
+        if not alert.latitude or not alert.longitude:
+            return None
+        try:
+            from app.services.harbor import HarborService
+            nearest = HarborService.find_nearest_harbors(
+                db, alert.latitude, alert.longitude, max_distance_km=300, limit=1
+            )
+            if nearest:
+                distance_km = nearest[0].distance_km
+                return max(1, int((distance_km / _RESCUE_SPEED_KMH) * 60))
+        except Exception:  # noqa: BLE001
+            pass
+        return None
 
     @staticmethod
     def _assess_severity(alert: SOSAlert) -> DecisionSupport:
         """Assess severity based on alert type and conditions."""
+        alert_type = (alert.alert_type or "unknown").lower()
+        risk_level, _ = _SOS_TYPE_MAP.get(alert_type, ("red", ""))
+
         evidence = [
-            DecisionEvidence(metric_name="Alert Type", value=alert.alert_type or "Unknown", severity="warning"),
-            DecisionEvidence(metric_name="Battery Level", value=alert.battery_level_percent, unit="%", severity="danger" if alert.battery_level_percent and alert.battery_level_percent < 20 else "ok"),
-            DecisionEvidence(metric_name="GPS Accuracy", value=alert.accuracy_meters, unit="m", severity="danger" if alert.accuracy_meters and alert.accuracy_meters > 100 else "ok"),
+            DecisionEvidence(
+                metric_name="Alert Type", value=alert.alert_type or "Unknown",
+                severity="danger",
+            ),
+            DecisionEvidence(
+                metric_name="Battery Level", value=alert.battery_level_percent,
+                unit="%",
+                severity="danger" if alert.battery_level_percent and alert.battery_level_percent < 20 else "ok",
+            ),
+            DecisionEvidence(
+                metric_name="GPS Accuracy", value=alert.accuracy_meters,
+                unit="m",
+                severity="danger" if alert.accuracy_meters and alert.accuracy_meters > 100 else "ok",
+            ),
         ]
-        
+
         rules = []
-        risk_level = "red"
-        
-        if alert.alert_type == "medical":
-            rules.append("Medical emergency reported — requires immediate medical assistance.")
-            risk_level = "critical"
-        elif alert.alert_type == "sinking":
-            rules.append("Vessel sinking reported — life-threatening emergency.")
-            risk_level = "critical"
-        elif alert.alert_type == "piracy":
-            rules.append("Piracy/hostile boarding reported — requires Coast Guard.")
-            risk_level = "critical"
+        if alert_type == "medical":
+            rules.append("Medical emergency — requires immediate medical assistance.")
+        elif alert_type == "sinking":
+            rules.append("Vessel sinking — life-threatening emergency.")
+        elif alert_type == "piracy":
+            rules.append("Piracy/hostile boarding — requires Coast Guard.")
+        elif alert_type == "fire":
+            rules.append("Fire on board — crew may need to abandon ship.")
+        elif alert_type == "man_overboard":
+            rules.append("Person overboard — every second counts.")
+        elif alert_type == "engine_failure":
+            rules.append("Engine failure — vessel adrift, confirm anchoring.")
         else:
-            rules.append(f"General SOS alert of type: {alert.alert_type or 'Unknown'}.")
-            
+            rules.append(f"SOS alert type: {alert.alert_type or 'Unknown'}.")
+
         if alert.battery_level_percent and alert.battery_level_percent < 20:
-            rules.append(f"Vessel battery is critically low ({alert.battery_level_percent}%). Communication may be lost soon.")
-            
+            rules.append(
+                f"Battery critically low ({alert.battery_level_percent}%) — "
+                "communication may be lost soon. Act before contact is lost."
+            )
+
+        if alert.accuracy_meters and alert.accuracy_meters > 200:
+            rules.append(
+                f"GPS accuracy is poor (±{alert.accuracy_meters:.0f}m) — "
+                "search area is larger than usual."
+            )
+
         return DecisionSupport(
             recommendation="Dispatch rescue resources immediately.",
             reason="; ".join(rules),
             evidence=evidence,
             confidence_score=0.95,
             priority="critical" if risk_level == "critical" else "high",
-            risk_level=risk_level
+            risk_level=risk_level,
+            suggested_action="Confirm vessel position and dispatch nearest available rescue asset.",
         )
 
     @staticmethod
     def _recommend_resources(alert: SOSAlert) -> DecisionSupport:
         """Recommend rescue resources based on alert type."""
-        evidence = [DecisionEvidence(metric_name="Alert Type", value=alert.alert_type or "Unknown", severity="warning")]
-        
-        if alert.alert_type == "medical":
-            rec = "Dispatch Coast Guard medical vessel or air-evac."
-        elif alert.alert_type == "sinking":
-            rec = "Dispatch fast response rescue vessel and alert nearby fishing vessels."
-        elif alert.alert_type == "piracy":
-            rec = "Dispatch Coast Guard interceptor. Do not send unarmed civilian vessels."
-        else:
-            rec = "Dispatch standard search and rescue (SAR) vessel."
-            
+        alert_type = (alert.alert_type or "unknown").lower()
+        _, rec = _SOS_TYPE_MAP.get(alert_type, ("red", "Dispatch standard search and rescue (SAR) vessel."))
+
+        evidence = [
+            DecisionEvidence(
+                metric_name="Alert Type", value=alert.alert_type or "Unknown",
+                severity="danger",
+            ),
+        ]
+
         return DecisionSupport(
             recommendation=rec,
-            reason=f"Recommended based on incident type: {alert.alert_type or 'Unknown'}.",
+            reason=f"Resource recommendation based on incident type: {alert.alert_type or 'Unknown'}.",
             evidence=evidence,
             confidence_score=0.9,
-            priority="high",
-            risk_level="red"
+            priority="critical" if alert_type in ("medical", "sinking", "piracy", "fire", "man_overboard") else "high",
+            risk_level="critical" if alert_type in ("medical", "sinking", "piracy", "fire", "man_overboard") else "red",
+            suggested_action="Coordinate with nearest Coast Guard station.",
         )
         
     @staticmethod

@@ -94,6 +94,7 @@ observability.init_tracing(settings.app_name)
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
     from uuid import uuid4
+    import time as _time
     try:
         req_id = (
             request.headers.get("x-request-id")
@@ -103,7 +104,20 @@ async def add_request_id(request: Request, call_next):
         set_correlation_id(req_id)
         # set a trace id if provided otherwise generate one; tracing systems may override
         set_trace_id(request.headers.get("x-trace-id") or str(uuid4()))
+        start = _time.monotonic()
         response = await call_next(request)
+        # Record HTTP metrics (best-effort, never breaks the request path)
+        try:
+            from app import observability
+            elapsed = _time.monotonic() - start
+            path = request.url.path
+            # Sanitize path to prevent cardinality explosion
+            import re
+            path = re.sub(r"/\d+", "/{id}", path)
+            observability.record_http_request(request.method, path, response.status_code)
+            observability.record_http_latency(request.method, path, elapsed)
+        except Exception:
+            pass
     finally:
         # clear correlation id to avoid bleed across async contexts
         set_correlation_id(None)
@@ -182,6 +196,45 @@ def health():
     return {
         "status": "healthy" if db_status == "healthy" else "degraded",
         "database": db_status,
+        "version": "0.5.0",
+        "environment": settings.environment,
+    }
+
+
+@app.get("/ready", tags=["health"])
+def ready():
+    """Readiness probe — confirms the application is ready to accept traffic.
+    Returns 200 when the service is operational, 503 during startup/draining."""
+    from sqlalchemy import text
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        db_status = "ready"
+    except Exception as e:
+        logger.error(f"Database readiness check failed: {e}")
+        db_status = "not_ready"
+    
+    status_code = 200 if db_status == "ready" else 503
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ready" if db_status == "ready" else "not_ready",
+            "database": db_status,
+            "version": "0.5.0",
+            "environment": settings.environment,
+        },
+    )
+
+
+@app.get("/live", tags=["health"])
+def live():
+    """Liveness probe — simple process health check. Returns 200 as long as
+    the application process is alive and responding. No database dependency
+    because a DB outage should not cause Kubernetes to restart the pod."""
+    return {
+        "status": "alive",
         "version": "0.5.0",
         "environment": settings.environment,
     }

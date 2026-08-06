@@ -19,31 +19,55 @@ class ExplainableAIProvider(ABC):
         ...
 
 class TemplateExplainableProvider(ExplainableAIProvider):
+    """Deterministic, marine-expert-voiced fallback explanation.
+
+    Follows the observe → think → reason → recommend mental model.
+    Never sounds like a generic chatbot.
+    """
+
+    # Risk-level → plain-language lead used by an experienced harbor master
+    _LEADS = {
+        "critical": "This situation requires immediate action — do not delay.",
+        "red":      "Conditions are serious. Address this before the next trip.",
+        "yellow":   "This needs attention, but there is time to act carefully.",
+        "green":    "Everything looks good from the available data.",
+    }
+
+    _ACTIONS = {
+        "critical": "Stop operations immediately and resolve the issue before proceeding.",
+        "red":      "Address the flagged items before the next departure.",
+        "yellow":   "Plan to resolve this within the next few days.",
+        "green":    "Continue normal operations and monitor for changes.",
+    }
+
     def explain(self, context: IntelligenceContext) -> DecisionSupport:
-        """Deterministic fallback explanation."""
         risk_level = context.data.get("risk_level", "green")
-        priority = "normal"
-        if risk_level == "critical":
-            priority = "critical"
-        elif risk_level == "red":
-            priority = "high"
-        
-        reasons = ", ".join(context.rules_triggered) if context.rules_triggered else "No specific rules triggered."
-        
+        priority_map = {"critical": "critical", "red": "high", "yellow": "normal", "green": "low"}
+
+        reasons = (
+            "; ".join(context.rules_triggered)
+            if context.rules_triggered
+            else "No specific issues detected from available data."
+        )
+
+        lead = self._LEADS.get(risk_level, self._LEADS["yellow"])
+        action = self._ACTIONS.get(risk_level, self._ACTIONS["yellow"])
+
         evidence = [
             DecisionEvidence(metric_name=k, value=v)
-            for k, v in context.data.items() if k != "risk_level"
+            for k, v in context.data.items()
+            if k != "risk_level"
         ]
 
         return DecisionSupport(
-            recommendation=f"Standard procedure based on {context.context_type}",
-            reason=f"Rules triggered: {reasons}",
+            recommendation=f"{lead} {reasons}",
+            reason=reasons,
             evidence=evidence,
-            confidence_score=0.9,
-            priority=priority,
+            confidence_score=0.85 if context.rules_triggered else 0.5,
+            priority=priority_map.get(risk_level, "normal"),
             risk_level=risk_level,
-            suggested_action="Review data and proceed.",
-            alternative_recommendations=[]
+            suggested_action=action,
+            alternative_recommendations=[],
         )
 
 class AnthropicExplainableProvider(ExplainableAIProvider):

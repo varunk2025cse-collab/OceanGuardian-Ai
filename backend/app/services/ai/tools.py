@@ -254,9 +254,24 @@ def generate_incident_summary(db: Session, requesting_user: User, incident_id: i
     reasons = [f"Incident type: {report['incident_type']}", f"Status: {report['status']}"]
     if report.get("response_time_seconds") is not None:
         reasons.append(f"Acknowledged in {report['response_time_seconds']:.0f}s")
+
+    # Map incident lifecycle status to a safety state the provider understands.
+    # Incident statuses (received/acknowledged/investigating/resolved/closed)
+    # are NOT safety states — never pass them raw to ExplanationRequest.
+    _incident_to_safety = {
+        "received": "HIGH_RISK",
+        "acknowledged": "CAUTION",
+        "investigating": "CAUTION",
+        "resolved": "SAFE",
+        "closed": "SAFE",
+    }
+    safety_state = _incident_to_safety.get(
+        (report.get("status") or "").lower(), "UNKNOWN"
+    )
+
     req = ExplanationRequest(
         fisherman_name=(report.get("fisherman") or {}).get("full_name", "Unknown"),
-        safety_state=report["status"].upper(),
+        safety_state=safety_state,
         safety_score=0,
         communication_state="UNKNOWN",
         freshness="UNKNOWN",

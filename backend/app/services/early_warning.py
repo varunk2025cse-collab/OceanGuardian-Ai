@@ -9,16 +9,15 @@ AND comms degrading AND stale location" pattern from the governing brief,
 evaluated at the moment of the check.
 
 What this build does NOT do: track evaluation history over time to detect
-trends ("wind speed increasing over the last hour", "location updates
-becoming less frequent"). That requires persisting a time series of
-evaluations, which is real, scoped, follow-on work — not something to fake
-by inventing a trend from a single snapshot. Treat `is_early_warning` as
-"multiple real risk factors are true right now", not "things are getting
-worse."
+trends. That requires persisting a time series of evaluations — real,
+scoped, follow-on work. Treat `is_early_warning` as "multiple real risk
+factors are true right now", not "things are getting worse."
 
 Deduplication of repeated notifications for an unchanged warning is the
 caller's responsibility (see app.services.notification_service's
 related_event_id dedup) — this function is a pure, stateless classifier.
+
+Tamil support: pass language="ta" to get Tamil-language fields.
 """
 from dataclasses import dataclass
 
@@ -42,9 +41,13 @@ class EarlyWarning:
     why_it_matters: str
     recommended_action: str
     severity: str
+    # Tamil-language equivalents (populated when language="ta")
+    what_changed_ta: str = ""
+    why_it_matters_ta: str = ""
+    recommended_action_ta: str = ""
 
 
-def evaluate(evaluation: SafetyEvaluation) -> EarlyWarning:
+def evaluate(evaluation: SafetyEvaluation, language: str = "en") -> EarlyWarning:
     fired_categories = set()
     for reason in evaluation.reasons:
         lowered = reason.lower()
@@ -78,6 +81,19 @@ def evaluate(evaluation: SafetyEvaluation) -> EarlyWarning:
         if evaluation.safety_state in ("HIGH_RISK",)
         else "Monitor conditions closely; no immediate action required yet."
     )
+
+    # Tamil translations
+    what_changed_ta = "; ".join(evaluation.reasons)  # reasons are English; Tamil UI can translate labels
+    why_it_matters_ta = (
+        f"{len(fired_categories)} சுயச்சிர்ந்த ஆபத்து காரணங்கள் ஒரே நேரத்தில் உள்ளன "
+        f"({', '.join(sorted(fired_categories))}). நிலை: {evaluation.safety_state}."
+    )
+    recommended_action_ta = (
+        "பாதுகாப்பான துறைமுகத்திற்கு திரும்புவது நல்லது. தொடர்புக்கு மீண்டும் முயற்சிக்கவும்."
+        if evaluation.safety_state in ("HIGH_RISK",)
+        else "நிலைமையை கவனமாக கண்காணிக்கவும். உடனடி நடவடிக்கை தேவையில்லை."
+    )
+
     return EarlyWarning(
         is_early_warning=True,
         categories=sorted(fired_categories),
@@ -85,4 +101,7 @@ def evaluate(evaluation: SafetyEvaluation) -> EarlyWarning:
         why_it_matters=why_it_matters,
         recommended_action=recommended_action,
         severity=evaluation.safety_state,
+        what_changed_ta=what_changed_ta,
+        why_it_matters_ta=why_it_matters_ta,
+        recommended_action_ta=recommended_action_ta,
     )

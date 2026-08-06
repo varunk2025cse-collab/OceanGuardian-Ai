@@ -14,7 +14,7 @@ class NotificationEventStream(Base):
     correlation_id = Column(String(64), nullable=False, index=True)
     priority = Column(String(50), nullable=False, server_default="NORMAL")
     source_module = Column(String(100))
-    status = Column(String(50), nullable=False, server_default="CREATED")
+    status = Column(String(50), nullable=False, server_default="CREATED", index=True)
     processed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -23,14 +23,14 @@ class NotificationQueueItem(Base):
     __tablename__ = "notification_queue_items"
 
     id = Column(Integer, primary_key=True)
-    event_id = Column(Integer, ForeignKey("notification_event_stream.id", ondelete="CASCADE"))
-    recipient_user_id = Column(Integer, nullable=True)
+    event_id = Column(Integer, ForeignKey("notification_event_stream.id", ondelete="CASCADE"), index=True)
+    recipient_user_id = Column(Integer, nullable=True, index=True)
     recipient_group_json = Column(JSON, nullable=True)
     channel = Column(String(50), nullable=False)
     provider_name = Column(String(100), nullable=True)
     payload_json = Column(JSON, nullable=False)
     priority = Column(String(50), nullable=False, server_default="NORMAL")
-    status = Column(String(50), nullable=False, server_default="QUEUED")
+    status = Column(String(50), nullable=False, server_default="QUEUED", index=True)
     attempt_count = Column(Integer, nullable=False, default=0, server_default="0")
     next_retry_at = Column(DateTime(timezone=True), nullable=True)
     timeout_at = Column(DateTime(timezone=True), nullable=True)
@@ -49,7 +49,7 @@ class NotificationLifecycleEvent(Base):
     __tablename__ = "notification_lifecycle_events"
 
     id = Column(Integer, primary_key=True)
-    notification_item_id = Column(Integer, ForeignKey("notification_queue_items.id", ondelete="CASCADE"))
+    notification_item_id = Column(Integer, ForeignKey("notification_queue_items.id", ondelete="CASCADE"), index=True)
     state = Column(String(50), nullable=False)
     detail = Column(Text, nullable=True)
     actor = Column(String(200), nullable=True)

@@ -335,7 +335,7 @@ def test_risk_level_warning(db, fisherman, boat, active_trip):
     risk = RiskPredictionService.calculate_risk_score(active_trip.id, db)
     
     assert risk is not None
-    assert risk.risk_score >= 50.0
+    assert risk.risk_score >= 40.0  # WARNING threshold is 40
 
 
 def test_get_trip_risk(db, fisherman, active_trip, harbor):
@@ -431,7 +431,7 @@ def test_risk_prediction_stored_in_database(db, fisherman, active_trip, harbor):
     
     assert prediction is not None
     assert prediction.risk_score >= 0
-    assert prediction.model_version == "rule_based_v1.0"
+    assert prediction.model_version == "rule_based_v2.0"
 
 
 def test_risk_factors_json_structure(db, fisherman, active_trip, harbor):

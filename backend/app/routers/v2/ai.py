@@ -29,6 +29,8 @@ class AIQueryOut(BaseModel):
     answer: str
     data: dict | list | None = None
     provider: str | None = None
+    confidence: float | None = None
+    explanation: dict | None = None
 
 
 @router.get("/intents")

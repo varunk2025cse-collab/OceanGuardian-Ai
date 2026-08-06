@@ -25,7 +25,6 @@ from app.models.sos import SOSAlert, SOSStatus
 from app.schemas.sos import SOSAlertIn, SOSAlertOut, SOSStatusUpdate
 from app.services.sos_service import notify_emergency_contacts
 from app.services.incident_service import IncidentService
-from app.services.notification_service import NotificationEngine, NotificationPriority
 
 logger = logging.getLogger("oceanguardian.sos")
 
@@ -56,7 +55,7 @@ def trigger_sos(
     db.commit()
     db.refresh(alert)
 
-    notify_emergency_contacts(current_user, alert)
+    notify_emergency_contacts(db, current_user, alert)
 
     # The alert itself is already committed above — everything from here
     # down is auxiliary (incident bookkeeping, family notification). A
@@ -69,17 +68,6 @@ def trigger_sos(
         IncidentService.create_from_sos(db, alert)
     except Exception:
         logger.exception("Failed to auto-create incident for SOS alert %s — alert itself is safe.", alert.id)
-
-    try:
-        NotificationEngine.notify_family_of_event(
-            db,
-            fisherman_id=current_user.id,
-            message=f"{current_user.full_name} triggered an SOS alert ({alert.alert_type or 'MANUAL_SOS'}).",
-            related_event_id=alert.id,
-            priority=NotificationPriority.critical,
-        )
-    except Exception:
-        logger.exception("Failed to dispatch family notification for SOS alert %s — alert itself is safe.", alert.id)
 
     return alert
 

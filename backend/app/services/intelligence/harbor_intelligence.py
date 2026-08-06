@@ -39,44 +39,48 @@ class HarborIntelligenceService:
     @staticmethod
     def _assess_capacity(db: Session, harbor: Harbor) -> DecisionSupport:
         """Assess harbor capacity based on active trips targeting it."""
-        # Find active trips heading to this harbor (using destination or harbor_id if it existed)
-        # We approximate inbound vessels by trips currently active
         inbound = db.query(Trip).filter(
             Trip.status == "active",
-            # Assuming 'destination' might contain harbor name, or we just count all trips for now as mock
-            Trip.destination.ilike(f"%{harbor.name}%") if harbor.name else False
+            Trip.destination.ilike(f"%{harbor.name}%") if harbor.name else False,
         ).count()
-        
-        # Real capacity logic requires knowing harbor size, but we approximate
-        capacity_limit = 100 # Mock max
-        projected = inbound
-        
+
+        # Use real capacity from the harbor record if available;
+        # fall back to a conservative 50 (not 100) when unknown.
+        capacity_limit = getattr(harbor, "capacity", None) or 50
+
         evidence = [
-            DecisionEvidence(metric_name="Inbound Trips", value=inbound, severity="warning" if inbound > capacity_limit * 0.8 else "ok"),
-            DecisionEvidence(metric_name="Estimated Capacity", value=capacity_limit, severity="ok")
+            DecisionEvidence(
+                metric_name="Inbound Trips", value=inbound,
+                severity="warning" if inbound > capacity_limit * 0.8 else "ok",
+            ),
+            DecisionEvidence(
+                metric_name="Harbor Capacity",
+                value=capacity_limit if capacity_limit != 50 else "unknown (est. 50)",
+                severity="ok",
+            ),
         ]
-        
+
         rules = []
         risk_level = "green"
-        
-        if projected > capacity_limit:
-            rules.append(f"Projected traffic ({projected}) exceeds harbor capacity ({capacity_limit}).")
+
+        if inbound > capacity_limit:
+            rules.append(f"Projected traffic ({inbound}) exceeds harbor capacity ({capacity_limit}).")
             risk_level = "red"
-        elif projected > capacity_limit * 0.8:
-            rules.append(f"Harbor is nearing capacity ({projected}/{capacity_limit}).")
+        elif inbound > capacity_limit * 0.8:
+            rules.append(f"Harbor is nearing capacity ({inbound}/{capacity_limit}).")
             risk_level = "yellow"
-            
+
         if not rules:
             rules.append("Harbor has available capacity.")
-            
+
         priority_map = {"green": "low", "yellow": "normal", "red": "high", "critical": "critical"}
         return DecisionSupport(
             recommendation="Harbor is open." if risk_level == "green" else "Harbor capacity constrained.",
             reason="; ".join(rules),
             evidence=evidence,
-            confidence_score=0.7,
+            confidence_score=0.6 if capacity_limit == 50 else 0.85,
             priority=priority_map.get(risk_level, "normal"),
-            risk_level=risk_level
+            risk_level=risk_level,
         )
 
     @staticmethod

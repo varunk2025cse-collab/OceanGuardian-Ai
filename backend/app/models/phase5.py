@@ -48,7 +48,7 @@ class CopilotSession(Base):
     __tablename__ = "copilot_sessions"
 
     id = Column(Integer, primary_key=True)
-    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     session_key = Column(String(255), unique=True, nullable=False)
     language = Column(String(10), default="ta")  # 'ta' or 'en'
     context_json = Column(Text, default="{}")  # Current context as JSON
@@ -112,9 +112,9 @@ class RiskIncident(Base):
     __tablename__ = "risk_incidents"
 
     id = Column(Integer, primary_key=True)
-    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"))
-    sos_alert_id = Column(Integer, ForeignKey("sos_alerts.id", ondelete="CASCADE"))
-    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), index=True)
+    sos_alert_id = Column(Integer, ForeignKey("sos_alerts.id", ondelete="CASCADE"), index=True)
+    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     incident_type = Column(String(100))  # e.g., "engine_failure", "collision", "weather_hit"
     severity = Column(String(20))
     description = Column(Text)
@@ -178,8 +178,8 @@ class CheckinLog(Base):
     __tablename__ = "checkin_logs"
 
     id = Column(Integer, primary_key=True)
-    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
-    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     last_gps_location_json = Column(Text, default="{}")  # {lat, lng, accuracy}
     last_update_time = Column(DateTime)
     time_since_last_update_minutes = Column(Integer, default=0)
@@ -291,13 +291,13 @@ class SafetyEscalation(Base):
     id = Column(Integer, primary_key=True)
     escalation_type = Column(String(50))  # missed_checkin, sos_unacknowledged, stale_gps_weather
     level = Column(Integer, default=1)  # 1-4
-    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"))
-    sos_alert_id = Column(Integer, ForeignKey("sos_alerts.id", ondelete="CASCADE"))
+    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), index=True)
+    sos_alert_id = Column(Integer, ForeignKey("sos_alerts.id", ondelete="CASCADE"), index=True)
     missed_checkin_id = Column(Integer, ForeignKey("missed_check_ins.id"))
     description = Column(Text)
     priority = Column(String(20), default="normal")  # normal, high, critical
-    status = Column(String(20), default="active")  # active, acknowledged, resolved
+    status = Column(String(20), default="active", index=True)  # active, acknowledged, resolved
     acknowledged_by_id = Column(Integer, ForeignKey("users.id"))
     acknowledged_at = Column(DateTime)
     resolved_by_id = Column(Integer, ForeignKey("users.id"))
@@ -502,8 +502,8 @@ class FamilyPortalAccess(Base):
     __tablename__ = "family_portal_access"
 
     id = Column(Integer, primary_key=True)
-    family_member_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    family_member_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     access_level = Column(String(50))  # "view_only", "emergency_contact", "primary"
     can_view_live_location = Column(Boolean, default=True)
     can_view_trip_history = Column(Boolean, default=True)
@@ -521,8 +521,8 @@ class FamilySafetyEvent(Base):
     __tablename__ = "family_safety_events"
 
     id = Column(Integer, primary_key=True)
-    family_member_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    family_member_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    fisherman_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     event_type = Column(String(50))  # "trip_started", "sos_alert", "trip_completed", "location_update"
     event_description = Column(Text)
     trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"))
@@ -543,7 +543,7 @@ class FamilyNotification(Base):
     __tablename__ = "family_notifications"
 
     id = Column(Integer, primary_key=True)
-    family_member_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    family_member_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     notification_type = Column(String(50))  # "push", "sms", "email"
     message = Column(Text)
     related_event_id = Column(Integer)
