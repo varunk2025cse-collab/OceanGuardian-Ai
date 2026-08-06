@@ -582,7 +582,54 @@ class AnalyticsService:
 
     @staticmethod
     def record_daily_metrics(db: Session, record_date: date = None) -> None:
-        """Record daily snapshot metrics."""
+        """Record daily snapshot metrics.
+
+        Minimal, safe implementation used in production runs where a full
+        analytics pipeline may not be available. This aggregates a small set
+        of durable metrics (SOS counts) into the AnalyticsSOSMetrics table.
+        The implementation is intentionally conservative and best-effort —
+        failures are logged and do not propagate.
+        """
+        import logging
+        logger = logging.getLogger("app.analytics")
+
         if record_date is None:
             record_date = datetime.utcnow().date()
-        pass
+
+        logger.info("record_daily_metrics started | date=%s", record_date)
+        try:
+            # Count SOS alerts for the day (best-effort)
+            total = (
+                db.query(func.count(SOSAlert.id))
+                .filter(func.date(SOSAlert.triggered_at) == record_date)
+                .scalar()
+            ) or 0
+
+            # Upsert into AnalyticsSOSMetrics for the daily period
+            existing = (
+                db.query(AnalyticsSOSMetrics)
+                .filter(
+                    AnalyticsSOSMetrics.period_date == record_date,
+                    AnalyticsSOSMetrics.period_type == "daily",
+                )
+                .first()
+            )
+            if existing:
+                existing.total_sos_alerts = total
+            else:
+                existing = AnalyticsSOSMetrics(
+                    period_date=record_date,
+                    period_type="daily",
+                    total_sos_alerts=total,
+                )
+                db.add(existing)
+            db.commit()
+            logger.info("record_daily_metrics complete | date=%s total_sos=%s", record_date, total)
+        except Exception as e:
+            logger.exception("record_daily_metrics failed: %s", e)
+            try:
+                db.rollback()
+            except Exception:
+                # best-effort rollback; ignore failures during error handling
+                pass
+        return None

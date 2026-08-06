@@ -260,4 +260,21 @@ def upgrade():
 
 
 def downgrade():
-    raise NotImplementedError("Downgrade of baseline is not supported.")
+    bind = op.get_bind()
+    is_sqlite = bind.dialect.name == "sqlite"
+
+    for table_name in (
+        "location_pings",
+        "sos_alerts",
+        "family_links",
+        "weather_alerts",
+        "market_prices",
+        "govt_schemes",
+        "users",
+    ):
+        if _table_exists(table_name):
+            op.drop_table(table_name)
+
+    if not is_sqlite:
+        for enum_name in ("userrole", "sosstatus", "hazardseverity", "hazardtype"):
+            op.execute(text(f"DROP TYPE IF EXISTS {enum_name}"))

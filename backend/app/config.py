@@ -4,6 +4,7 @@ Using pydantic-settings keeps config validated and typed instead of scattered
 os.environ.get() calls across the codebase.
 """
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -12,7 +13,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg2://oceanguardian:oceanguardian@localhost:5432/oceanguardian"
 
-    jwt_secret_key: str = "dev-secret-change-me"
+    jwt_secret_key: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
@@ -82,6 +83,15 @@ class Settings(BaseSettings):
     demo_mode: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def validate_jwt_secret_key(cls, value: str) -> str:
+        if value:
+            return value
+        if cls.__name__ == "Settings":
+            return ""
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:

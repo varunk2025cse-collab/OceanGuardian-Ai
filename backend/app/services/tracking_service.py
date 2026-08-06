@@ -120,11 +120,16 @@ class TrackingService:
     ) -> list[LocationPing]:
         """Authorization: a fisherman may view their own history; an operator
         may view anyone's; a family member only a linked fisherman's."""
+        # Determine authorization explicitly to avoid placeholder 'pass' statements
+        authorized = False
         if requesting_user.role == UserRole.operator:
-            pass
+            # Operators have full access
+            authorized = True
         elif requesting_user.id == fisherman_id:
-            pass
+            # A fisherman may view their own history
+            authorized = True
         elif requesting_user.role == UserRole.family:
+            # Family members can view history only for linked fishermen
             linked = (
                 db.query(FamilyLink)
                 .filter(
@@ -138,7 +143,15 @@ class TrackingService:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You are not authorized to view this fisherman's location",
                 )
+            authorized = True
         else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not authorized to view this fisherman's location",
+            )
+
+        if not authorized:
+            # Defensive check — should not be reachable but keeps behaviour explicit
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not authorized to view this fisherman's location",

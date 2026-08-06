@@ -75,9 +75,19 @@ class TwilioSmsProvider(NotificationProvider):
         self._from = settings.twilio_from_number
 
     def send(self, *, to_user_id: int, message: str, priority: NotificationPriority) -> DeliveryResult:
-        # Requires the recipient's phone number, resolved by the caller
-        # (NotificationEngine) since this provider only knows how to dial out.
-        raise NotImplementedError("TwilioSmsProvider.send_sms(to_phone=...) must be used via NotificationEngine")
+        # The generic provider interface only exposes a user-id, but Twilio
+        # delivery requires a phone number. Return a failed result instead of
+        # raising so the notification workflow can audit the failure without
+        # breaking the request path.
+        logger.warning(
+            "Twilio provider requested for user_id=%s without an explicit phone number; delivery was not attempted",
+            to_user_id,
+        )
+        return DeliveryResult(
+            status="failed",
+            detail="Twilio provider requires an explicit phone number for delivery",
+            simulated=False,
+        )
 
     def send_sms(self, *, to_phone: str, message: str) -> DeliveryResult:
         try:

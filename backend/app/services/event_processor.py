@@ -22,6 +22,7 @@ from app.models.notification_models import (
 )
 from app.models.family_link import FamilyLink
 from app.models.user import User
+from app.observability import record_event_processed
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +116,10 @@ class EventProcessor:
                 ev.status = "COMPLETED"
                 ev.processed_at = datetime.now(timezone.utc)
                 db.commit()
+                try:
+                    record_event_processed(1)
+                except Exception:
+                    logger.exception("Failed to increment event processed metric")
             except Exception as exc:
                 logger.exception("Failed processing notification event %s", ev.id)
                 db.rollback()

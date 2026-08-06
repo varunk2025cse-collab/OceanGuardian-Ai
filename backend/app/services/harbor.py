@@ -1,7 +1,7 @@
 """Harbor Intelligence Service — APIs and business logic for harbor management."""
 import json
 from math import radians, cos, sin, asin, sqrt
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -410,7 +410,10 @@ class HarborService:
         """End harbor visit (set departure time)."""
         visit = db.query(HarborVisit).filter(HarborVisit.id == visit_id).first()
         if visit:
-            visit.departure_time = datetime.utcnow()
+            departure_time = datetime.utcnow()
+            if visit.arrival_time is not None and departure_time <= visit.arrival_time:
+                departure_time = visit.arrival_time + timedelta(microseconds=1)
+            visit.departure_time = departure_time
             db.commit()
             db.refresh(visit)
         return visit

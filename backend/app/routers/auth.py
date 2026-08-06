@@ -140,9 +140,9 @@ def forgot_password(payload: PasswordResetRequest, db: Session = Depends(get_db)
     db.add(prt)
     db.commit()
 
-    # TODO: integrate with notification providers (SMS/Push/Email). For now, log the token
-    # so operators/developers can use it in staging/test environments.
-    logger.info("Password reset token for user %s: %s", user.phone_number, raw_token)
+    # Do not log reset secrets. Emit a non-sensitive audit message so
+    # operators can trace issuance without leaking the one-time token.
+    logger.info("Password reset token created for user %s", user.phone_number)
 
     return {"status": "ok"}
 
